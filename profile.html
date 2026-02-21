@@ -191,7 +191,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getDatabase, onValue, ref, update } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+    import { getDatabase, onValue, ref, update, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
@@ -273,7 +273,16 @@
       ifscInput.value = user.bank_ifsc || '';
 
       const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
-      referralCodeInput.value = `SR${referralDigits}`;
+      const myReferralCode = user.myReferralCode || referralDigits;
+      referralCodeInput.value = myReferralCode;
+
+      if (!user.myReferralCode) {
+        update(userRef, { myReferralCode }).catch(() => {});
+      }
+      set(ref(db, `referral_codes/${myReferralCode}`), {
+        phone,
+        createdAt: user.time || Date.now()
+      }).catch(() => {});
 
       const lockBank = Boolean((user.upi_id || '').trim() || (user.bank_acc || '').trim() || (user.bank_ifsc || '').trim());
       setBankLockState(lockBank);
