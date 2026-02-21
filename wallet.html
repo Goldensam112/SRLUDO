@@ -93,6 +93,13 @@
     }
     .tab.active { background: rgba(47,123,255,.25); border-color: rgba(47,123,255,.6); }
     .list { margin-top: 10px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: linear-gradient(160deg, var(--card), var(--card-2));
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+    }
     .item {
       border: 1px solid var(--line);
       border-radius: 11px;
@@ -180,6 +187,25 @@
         <button id="withdrawBtn" class="btn btn-withdraw" type="button">WITHDRAW</button>
       </section>
 
+      <section class="panel" style="margin-top:12px;">
+        <h3 style="margin:0 0 8px;">Refer & Earn</h3>
+        <div class="cards" style="grid-template-columns:1fr 1fr 1fr; gap:8px;">
+          <article class="wallet-card" style="min-height:88px;background:rgba(47,123,255,.15);">
+            <p>Total Refers</p>
+            <h2 id="totalRefers" style="font-size:20px;">0</h2>
+          </article>
+          <article class="wallet-card" style="min-height:88px;background:rgba(255,208,90,.15);">
+            <p>Total Earned</p>
+            <h2 id="totalEarned" style="font-size:20px;">₹0</h2>
+          </article>
+          <article class="wallet-card" style="min-height:88px;background:rgba(56,209,127,.15);">
+            <p>Referral Wallet</p>
+            <h2 id="referralWallet" style="font-size:20px;">₹0</h2>
+          </article>
+        </div>
+        <button id="withdrawReferralBtn" class="btn btn-add" type="button" style="margin-top:10px; width:100%;">Withdraw Commission to Cash</button>
+      </section>
+
       <section class="tabs">
         <button class="tab active" data-tab="deposit" type="button">Deposit History</button>
         <button class="tab" data-tab="withdraw" type="button">Withdraw History</button>
@@ -232,7 +258,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getDatabase, ref, get, set, push, onValue, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+    import { getDatabase, ref, get, set, push, onValue, query, orderByChild, limitToLast, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
@@ -268,6 +294,10 @@
     const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
+    const totalRefers = document.getElementById('totalRefers');
+    const totalEarned = document.getElementById('totalEarned');
+    const referralWallet = document.getElementById('referralWallet');
+    const withdrawReferralBtn = document.getElementById('withdrawReferralBtn');
 
     let activeTab = 'deposit';
     let userData = {};
@@ -376,6 +406,14 @@
       userData = snap.val() || {};
       cashBal.textContent = fmt(userData.balance);
       winBal.textContent = fmt(userData.win_balance);
+      referralWallet.textContent = fmt(userData.referral_balance || 0);
+    });
+
+    onValue(ref(db, `referrals/${phone}`), (snap) => {
+      const referralData = snap.val() || {};
+      const friends = referralData.friends_list || {};
+      totalRefers.textContent = String(Object.keys(friends).length);
+      totalEarned.textContent = fmt(referralData.earnings_total || 0);
     });
 
     await ensureUser();
@@ -385,6 +423,33 @@
     withdrawBtn.addEventListener('click', () => showModal(withdrawModal));
     submitDepositBtn.addEventListener('click', submitDeposit);
     submitWithdrawBtn.addEventListener('click', submitWithdraw);
+    withdrawReferralBtn.addEventListener('click', async () => {
+      const available = Number(userData.referral_balance || 0);
+      if (available <= 0) {
+        alert('No referral commission available to transfer.');
+        return;
+      }
+
+      withdrawReferralBtn.disabled = true;
+      try {
+        const tx = await runTransaction(ref(db, `users/${phone}`), (user) => {
+          if (!user) return user;
+          const refBal = Number(user.referral_balance || 0);
+          if (refBal <= 0) return;
+          user.referral_balance = 0;
+          user.balance = Number(user.balance || 0) + refBal;
+          return user;
+        });
+
+        if (!tx.committed) throw new Error('Unable to transfer referral commission.');
+        alert('Referral commission transferred to cash wallet.');
+      } catch (error) {
+        alert(error.message || 'Transfer failed.');
+      } finally {
+        withdrawReferralBtn.disabled = false;
+      }
+    });
+
     copyUpiBtn.addEventListener('click', async () => {
       await navigator.clipboard.writeText(adminUpi.value);
       alert('UPI copied');
