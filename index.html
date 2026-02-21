@@ -7,128 +7,160 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <aside class="sidebar">
+  <div id="drawerOverlay" class="drawer-overlay hidden"></div>
+
+  <aside id="sidebar" class="sidebar">
     <h2>SR Ludo</h2>
+    <p class="muted">App Menu</p>
+    <button data-section-target="homeSection">Home</button>
+    <button data-section-target="arenaSection">Battle Arena</button>
+    <button data-section-target="referralSection">Referrals</button>
+    <button data-section-target="kycSection">Profile & KYC</button>
+    <hr />
     <button data-open-modal="matchHistoryModal">Match History</button>
     <button data-open-modal="depositHistoryModal">Deposit History</button>
     <button data-open-modal="withdrawHistoryModal">Withdraw History</button>
+    <a class="whatsapp-link" href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer">WhatsApp Support</a>
   </aside>
 
-  <main>
-    <header class="topbar card">
+  <div class="app-shell">
+    <header class="mobile-topbar card">
+      <button id="menuToggle" class="secondary">☰</button>
       <div>
-        <h1>Home Dashboard</h1>
-        <p class="muted">Competitive Ludo, built for real-time battles.</p>
+        <strong>SR Ludo Live</strong>
+        <p class="muted small">Real-time competitive battles</p>
       </div>
       <div class="live-box">
         <span id="liveDot" class="live-dot"></span>
-        <strong>Live Players:</strong> <span id="livePlayers">0</span>
+        <span id="livePlayers">0</span>
       </div>
     </header>
 
-    <section class="grid two">
-      <article class="card action-card" id="goArena">
-        <h3>Classic Ludo Live</h3>
-        <p>Join real-time battles with smart wallet deduction and strict payouts.</p>
-      </article>
-      <a class="card action-card" href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer">
-        <h3>WhatsApp Support</h3>
-        <p>Get instant support for battle issues and wallet requests.</p>
-      </a>
-    </section>
-
-    <section id="arena" class="card hidden">
-      <div class="row spread">
-        <h2>Battle Arena</h2>
-        <button id="openRules" class="secondary">Rules</button>
-      </div>
-      <div class="grid two">
-        <div>
-          <h3>Wallets</h3>
-          <p>Winning Wallet: ₹<span id="winBalance"></span></p>
-          <p>Cash Wallet: ₹<span id="cashBalance"></span></p>
-          <div class="row">
-            <input id="depositAmount" type="number" min="1" placeholder="Deposit ₹" />
-            <button id="depositBtn">Deposit</button>
+    <main>
+      <section id="homeSection" class="app-section">
+        <header class="topbar card">
+          <div>
+            <h1>Home Dashboard</h1>
+            <p class="muted">Competitive Ludo, built for real-time battles.</p>
           </div>
-          <div class="row">
-            <input id="withdrawAmount" type="number" min="1" placeholder="Withdraw ₹" />
-            <button id="withdrawBtn" class="secondary">Withdraw</button>
+          <div class="live-box">
+            <span id="liveDotDesktop" class="live-dot"></span>
+            <strong>Live Players:</strong> <span id="livePlayersDesktop">0</span>
+          </div>
+        </header>
+
+        <section class="grid two">
+          <article class="card action-card" id="goArena">
+            <h3>Classic Ludo Live</h3>
+            <p>Join real-time battles with smart wallet deduction and strict payouts.</p>
+          </article>
+          <a class="card action-card" href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer">
+            <h3>WhatsApp Support</h3>
+            <p>Get instant support for battle issues and wallet requests.</p>
+          </a>
+        </section>
+      </section>
+
+      <section id="arenaSection" class="card app-section hidden">
+        <div class="row spread">
+          <h2>Battle Arena</h2>
+          <button id="openRules" class="secondary">Rules</button>
+        </div>
+        <div class="grid two">
+          <div>
+            <h3>Wallets</h3>
+            <p>Winning Wallet: ₹<span id="winBalance"></span></p>
+            <p>Cash Wallet: ₹<span id="cashBalance"></span></p>
+            <div class="row">
+              <input id="depositAmount" type="number" min="1" placeholder="Deposit ₹" />
+              <button id="depositBtn">Deposit</button>
+            </div>
+            <div class="row">
+              <input id="withdrawAmount" type="number" min="1" placeholder="Withdraw ₹" />
+              <button id="withdrawBtn" class="secondary">Withdraw</button>
+            </div>
+          </div>
+          <div>
+            <h3>Create Battle</h3>
+            <input id="entryAmount" type="number" min="50" step="50" placeholder="Entry (50,100,150...)" />
+            <div class="row">
+              <button id="createBattleBtn">Create</button>
+              <button id="joinMockBtn" class="secondary">Join as Rival</button>
+              <button id="cancelBattleBtn" class="danger">Cancel</button>
+            </div>
+            <p class="muted" id="deductionPreview">Deduction: -</p>
+            <p id="battleState"></p>
           </div>
         </div>
-        <div>
-          <h3>Create Battle</h3>
-          <input id="entryAmount" type="number" min="50" step="50" placeholder="Entry (50,100,150...)" />
-          <div class="row">
-            <button id="createBattleBtn">Create</button>
-            <button id="joinMockBtn" class="secondary">Join as Rival</button>
-            <button id="cancelBattleBtn" class="danger">Cancel</button>
-          </div>
-          <p class="muted" id="deductionPreview">Deduction: -</p>
-          <p id="battleState"></p>
-        </div>
-      </div>
 
-      <div id="creatorCodeSection" class="hidden panel">
-        <h3>Creator: Enter Room Code</h3>
+        <div id="creatorCodeSection" class="hidden panel">
+          <h3>Creator: Enter Room Code</h3>
+          <div class="row">
+            <input id="roomCodeInput" placeholder="e.g., LUDO1234" />
+            <button id="saveRoomCodeBtn">Save Code</button>
+          </div>
+        </div>
+
+        <div id="joinerCodeSection" class="hidden panel center">
+          <h3>Joiner View</h3>
+          <p class="muted">Room code appears instantly once creator saves.</p>
+          <div class="room-code" id="roomCodeDisplay">Waiting...</div>
+        </div>
+
+        <div id="resultSection" class="hidden panel">
+          <h3>Result Declaration</h3>
+          <div class="row">
+            <button id="lostBtn" class="danger">I LOST</button>
+            <button id="winBtn">I WIN</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="referralSection" class="card app-section hidden">
+        <h2>Referral Analytics</h2>
+        <p>Lifetime 2% commission from every win your referred users achieve.</p>
         <div class="row">
-          <input id="roomCodeInput" placeholder="e.g., LUDO1234" />
-          <button id="saveRoomCodeBtn">Save Code</button>
+          <select id="refUserSelect"></select>
+          <input id="refWinAmount" type="number" min="1" placeholder="Referred user win ₹" />
+          <button id="creditReferralBtn">Record Win</button>
         </div>
-      </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Registered</th>
+              <th>Lifetime Win</th>
+              <th>Commission Earned</th>
+            </tr>
+          </thead>
+          <tbody id="refTableBody"></tbody>
+        </table>
+      </section>
 
-      <div id="joinerCodeSection" class="hidden panel center">
-        <h3>Joiner View</h3>
-        <p class="muted">Room code appears instantly once creator saves.</p>
-        <div class="room-code" id="roomCodeDisplay">Waiting...</div>
-      </div>
+      <section id="kycSection" class="card app-section hidden">
+        <h2>Profile & KYC</h2>
+        <form id="kycForm" class="grid two">
+          <input required name="holderName" placeholder="Account Holder Name" />
+          <input required name="upiId" placeholder="UPI ID" />
+          <input required name="bankAccount" placeholder="Bank Account Number" />
+          <input required name="ifsc" placeholder="IFSC" />
+          <input required name="aadharNumber" placeholder="Aadhar Number" />
+          <input required name="aadharFront" type="file" accept="image/*" />
+          <button type="submit">Submit KYC</button>
+        </form>
+        <p id="kycLockNotice" class="muted"></p>
+        <a id="messageAdminLink" href="https://wa.me/919999999999" target="_blank" class="hidden">Message Admin for changes</a>
+      </section>
+    </main>
 
-      <div id="resultSection" class="hidden panel">
-        <h3>Result Declaration</h3>
-        <div class="row">
-          <button id="lostBtn" class="danger">I LOST</button>
-          <button id="winBtn">I WIN</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Referral Analytics</h2>
-      <p>Lifetime 2% commission from every win your referred users achieve.</p>
-      <div class="row">
-        <select id="refUserSelect"></select>
-        <input id="refWinAmount" type="number" min="1" placeholder="Referred user win ₹" />
-        <button id="creditReferralBtn">Record Win</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Registered</th>
-            <th>Lifetime Win</th>
-            <th>Commission Earned</th>
-          </tr>
-        </thead>
-        <tbody id="refTableBody"></tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Profile & KYC</h2>
-      <form id="kycForm" class="grid two">
-        <input required name="holderName" placeholder="Account Holder Name" />
-        <input required name="upiId" placeholder="UPI ID" />
-        <input required name="bankAccount" placeholder="Bank Account Number" />
-        <input required name="ifsc" placeholder="IFSC" />
-        <input required name="aadharNumber" placeholder="Aadhar Number" />
-        <input required name="aadharFront" type="file" accept="image/*" />
-        <button type="submit">Submit KYC</button>
-      </form>
-      <p id="kycLockNotice" class="muted"></p>
-      <a id="messageAdminLink" href="https://wa.me/919999999999" target="_blank" class="hidden">Message Admin for changes</a>
-    </section>
-  </main>
+    <nav class="bottom-nav">
+      <button data-section-target="homeSection" class="active">Home</button>
+      <button data-section-target="arenaSection">Battle</button>
+      <button data-section-target="referralSection">Referral</button>
+      <button data-section-target="kycSection">Profile</button>
+    </nav>
+  </div>
 
   <div id="rulesModal" class="modal hidden">
     <div class="modal-card">
