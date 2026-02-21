@@ -273,7 +273,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const phone = (localStorage.getItem('sr_ludo_phone') || '').trim();
+    let currentPhone = (localStorage.getItem('sr_ludo_phone') || '').trim();
+    const phone = currentPhone;
     if (!phone) {
       window.location.href = 'index.html';
       throw new Error('No phone found.');
@@ -323,11 +324,21 @@
     };
 
     const loadHistory = async () => {
-      const path = activeTab === 'deposit' ? `deposit_requests/${phone}` : `withdraw_requests/${phone}`;
-      const snap = await get(query(ref(db, path), orderByChild('time'), limitToLast(10)));
-      const list = snap.val() || {};
-      const rows = Object.values(list).sort((a, b) => (b.time || b.timestamp || 0) - (a.time || a.timestamp || 0));
-      renderHistory(rows);
+      currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+      if (!currentPhone) {
+        renderHistory([]);
+        return;
+      }
+      try {
+        const path = activeTab === 'deposit' ? `deposit_requests/${currentPhone}` : `withdraw_requests/${currentPhone}`;
+        const snap = await get(query(ref(db, path), orderByChild('time'), limitToLast(10)));
+        const list = snap.val() || {};
+        const rows = Object.values(list).sort((a, b) => (b.time || b.timestamp || 0) - (a.time || a.timestamp || 0));
+        renderHistory(rows);
+      } catch (error) {
+        console.error('History load failed:', error);
+        renderHistory([]);
+      }
     };
 
     const ensureUser = async () => {
@@ -335,7 +346,7 @@
       const snap = await get(userRef);
       if (!snap.exists()) {
         await set(userRef, {
-          phone,
+          phone: currentPhone,
           balance: 0,
           win_balance: 0,
           referral_balance: 0,
@@ -353,10 +364,12 @@
 
       submitDepositBtn.disabled = true;
       try {
-        const reqRef = push(ref(db, `deposit_requests/${phone}`));
+        currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+        if (!currentPhone) throw new Error('Login required. Please login again.');
+        const reqRef = push(ref(db, `deposit_requests/${currentPhone}`));
         await set(reqRef, {
           id: reqRef.key,
-          phone,
+          phone: currentPhone,
           amount,
           utr,
           status: 'pending',
@@ -367,6 +380,8 @@
         document.getElementById('depositAmount').value = '';
         document.getElementById('utrInput').value = '';
         if (activeTab === 'deposit') loadHistory();
+      } catch (error) {
+        alert(error.message || 'Deposit request failed.');
       } finally {
         submitDepositBtn.disabled = false;
       }
@@ -374,8 +389,8 @@
 
     const submitWithdraw = async () => {
       const amount = Number(document.getElementById('withdrawAmount').value);
-      if (userData.kyc_status !== 'verified') {
-        alert('Please complete KYC first!');
+      if (!userData || userData.kyc_status !== 'verified') {
+        alert('KYC Required');
         window.location.href = 'profile.html';
         return;
       }
@@ -384,10 +399,12 @@
 
       submitWithdrawBtn.disabled = true;
       try {
-        const reqRef = push(ref(db, `withdraw_requests/${phone}`));
+        currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+        if (!currentPhone) throw new Error('Login required. Please login again.');
+        const reqRef = push(ref(db, `withdraw_requests/${currentPhone}`));
         await set(reqRef, {
           id: reqRef.key,
-          phone,
+          phone: currentPhone,
           amount,
           status: 'pending',
           from_wallet: 'win_balance',
@@ -397,6 +414,8 @@
         closeModal(withdrawModal);
         document.getElementById('withdrawAmount').value = '';
         if (activeTab === 'withdraw') loadHistory();
+      } catch (error) {
+        alert(error.message || 'Withdraw request failed.');
       } finally {
         submitWithdrawBtn.disabled = false;
       }
