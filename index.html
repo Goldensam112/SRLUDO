@@ -313,7 +313,7 @@
     const logoutBtn = document.getElementById('logoutBtn');
     const classicCard = document.getElementById('classicCard');
 
-    let currentPhone = null;
+    let currentPhone = localStorage.getItem('sr_ludo_phone');
 
     const normalizePhone = (rawPhone) => {
       if (!rawPhone) return null;
@@ -422,30 +422,47 @@
     };
 
     const openHistoryModal = async (type) => {
-      if (!currentPhone) return;
+      currentPhone = normalizePhone(currentPhone || localStorage.getItem('sr_ludo_phone'));
+      if (!currentPhone) {
+        historyList.innerHTML = '<p class="hint">No records found.</p>';
+        return;
+      }
+
       modalTitle.textContent = type.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
       historyList.innerHTML = '<p class="hint">Loading records...</p>';
       modal.classList.add('show');
       overlay.classList.add('show');
       closeSidebar();
 
-      const historyRef = query(ref(db, `${type}/${currentPhone}`), orderByChild('time'), limitToLast(15));
-      const snap = await get(historyRef);
-      const list = snap.val();
+      const pathByType = {
+        match_history: `match_history/${currentPhone}`,
+        deposit_history: `deposit_requests/${currentPhone}`,
+        withdraw_history: `withdraw_requests/${currentPhone}`
+      };
+      const targetPath = pathByType[type] || `${type}/${currentPhone}`;
 
-      if (!list) {
+      try {
+        const historyRef = query(ref(db, targetPath), orderByChild('time'), limitToLast(15));
+        const snap = await get(historyRef);
+        const list = snap.val();
+
+        if (!list) {
+          historyList.innerHTML = '<p class="hint">No records found.</p>';
+          return;
+        }
+
+        const entries = Object.entries(list).sort((a, b) => (b[1].time || b[1].timestamp || 0) - (a[1].time || a[1].timestamp || 0));
+        historyList.innerHTML = entries.map(([id, item]) => {
+          const amount = item.amount ?? item.entry_fee ?? '-';
+          const status = item.status ?? item.result ?? 'N/A';
+          const recordTime = item.time || item.timestamp;
+          const date = recordTime ? new Date(recordTime).toLocaleString('en-IN') : '-';
+          return `<div class="record"><strong>#${id}</strong><br>Amount: ₹${amount}<br>Status: ${status}<br>${date}</div>`;
+        }).join('');
+      } catch (error) {
+        console.error('History fetch failed:', error);
         historyList.innerHTML = '<p class="hint">No records found.</p>';
-        return;
       }
-
-      const entries = Object.entries(list).sort((a, b) => (b[1].time || b[1].timestamp || 0) - (a[1].time || a[1].timestamp || 0));
-      historyList.innerHTML = entries.map(([id, item]) => {
-        const amount = item.amount ?? item.entry_fee ?? '-';
-        const status = item.status ?? item.result ?? 'N/A';
-        const recordTime = item.time || item.timestamp;
-        const date = recordTime ? new Date(recordTime).toLocaleString('en-IN') : '-';
-        return `<div class="record"><strong>#${id}</strong><br>Amount: ₹${amount}<br>Status: ${status}<br>${date}</div>`;
-      }).join('');
     };
 
     const tryAutoLogin = async () => {
