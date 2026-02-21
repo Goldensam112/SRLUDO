@@ -281,11 +281,18 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const phone = (localStorage.getItem('sr_ludo_phone') || '').trim();
+    const normalizePhone = (value) => {
+      const cleaned = (value || '').toString().trim().replace(/[^\d+]/g, '');
+      if (!cleaned) return '';
+      return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
+    };
+
+    const phone = normalizePhone(localStorage.getItem('sr_ludo_phone'));
     if (!phone) {
       window.location.href = 'index.html';
       throw new Error('Phone missing. Redirecting to login.');
     }
+    localStorage.setItem('sr_ludo_phone', phone);
 
     const cashAmount = document.getElementById('cashAmount');
     const winAmount = document.getElementById('winAmount');
@@ -465,12 +472,27 @@
       }
     }
 
+    async function writeMatchHistoryEntry(playerPhone, battle, result) {
+      if (!playerPhone || !battle?.id) return;
+      await update(ref(db, `match_history/${playerPhone}/${battle.id}`), {
+        battle_id: battle.id,
+        entry_fee: Number(battle.amount || 0),
+        prize: Number(battle.winAmount || 0),
+        status: result,
+        timestamp: Date.now(),
+        time: Date.now(),
+        creatorPhone: battle.creatorPhone || '',
+        joinerPhone: battle.joinerPhone || ''
+      });
+    }
+
     async function setRoomCode(battleId, code) {
       const roomCode = (code || '').trim();
       if (!roomCode) return alert('Enter room code first.');
       await runTransaction(ref(db, `battles/${battleId}`), (battle) => {
         if (!battle || battle.status !== 'playing' || battle.creatorPhone !== phone) return battle;
         battle.roomCode = roomCode;
+        battle.room_code = roomCode;
         battle.roomCodeAt = Date.now();
         battle.updatedAt = Date.now();
         return battle;
@@ -498,6 +520,8 @@
       const winAmt = Number(data.winAmount || 0);
       await creditWinning(data.winnerPhone, winAmt);
       await creditReferralCommission(data.winnerPhone, winAmt);
+      await writeMatchHistoryEntry(data.creatorPhone, data, data.creatorPhone === data.winnerPhone ? 'win' : 'lost');
+      await writeMatchHistoryEntry(data.joinerPhone, data, data.joinerPhone === data.winnerPhone ? 'win' : 'lost');
     }
 
     async function uploadToImgBB(file) {
@@ -521,17 +545,30 @@
       submitWinBtn.disabled = true;
       try {
         const url = await uploadToImgBB(file);
-        await runTransaction(ref(db, `battles/${pendingWinBattleId}`), (battle) => {
-          if (!battle || battle.status !== 'playing') return battle;
+        const tx = await runTransaction(ref(db, `battles/${pendingWinBattleId}`), (battle) => {
+          if (!battle || battle.status !== 'playing' || battle.settledAt) return;
           const isParticipant = [battle.creatorPhone, battle.joinerPhone].includes(phone);
-          if (!isParticipant) return battle;
-          battle.status = 'dispute';
+          if (!isParticipant) return;
+          battle.status = 'completed';
           battle.win_claim_by = phone;
           battle.win_ss = battle.win_ss || {};
           battle.win_ss[phone] = url;
+          battle.winnerPhone = phone;
+          battle.loserPhone = battle.creatorPhone === phone ? battle.joinerPhone : battle.creatorPhone;
+          battle.resultType = 'win-declared';
+          battle.settledAt = Date.now();
           battle.updatedAt = Date.now();
           return battle;
         });
+
+        if (!tx.committed) throw new Error('Unable to submit win result.');
+
+        const resultBattle = tx.snapshot.val();
+        const winAmt = Number(resultBattle.winAmount || 0);
+        await creditWinning(resultBattle.winnerPhone, winAmt);
+        await creditReferralCommission(resultBattle.winnerPhone, winAmt);
+        await writeMatchHistoryEntry(resultBattle.creatorPhone, resultBattle, resultBattle.creatorPhone === resultBattle.winnerPhone ? 'win' : 'lost');
+        await writeMatchHistoryEntry(resultBattle.joinerPhone, resultBattle, resultBattle.joinerPhone === resultBattle.winnerPhone ? 'win' : 'lost');
         closeModal(winModal);
         pendingWinBattleId = null;
         winFile.value = '';
@@ -574,16 +611,18 @@
       const meParticipant = meCreator || meJoiner;
       if (!meParticipant) return '';
 
+      const roomCode = b.room_code || b.roomCode || '';
       const roomInput = meCreator
         ? `<div class="row" style="margin-top:8px;">
-            <input class="input" id="room-${b.id}" placeholder="Enter Room Code" value="${b.roomCode || ''}" />
+            <input class="input" id="room-${b.id}" placeholder="Enter Room Code" value="${roomCode}" />
             <button class="btn btn-gold" data-action="set-room" data-id="${b.id}" type="button">SET</button>
            </div>`
-        : (b.roomCode ? `<div class="room-code">${b.roomCode}</div>` : '<div class="small muted" style="margin-top:8px;">Waiting for creator to set room code...</div>');
+        : (roomCode ? `<div class="room-code">${roomCode}</div>` : '<div class="small muted" style="margin-top:8px;">Waiting for creator to set room code...</div>');
 
+      const actionDisplay = roomCode ? 'flex' : 'none';
       return `
         ${roomInput}
-        <div class="row" style="margin-top:10px;">
+        <div class="row" style="margin-top:10px;display:${actionDisplay};">
           <button class="btn btn-win full" data-action="i-win" data-id="${b.id}" type="button">I WIN</button>
           <button class="btn btn-danger full" data-action="i-lost" data-id="${b.id}" type="button">I LOST</button>
         </div>
@@ -591,8 +630,9 @@
     }
 
     function renderRunningBattles(data) {
+      const completedStatuses = ['completed', 'win', 'lost'];
       const list = Object.values(data || {})
-        .filter((b) => [b.creatorPhone, b.joinerPhone].includes(phone) && ['playing', 'dispute', 'completed'].includes(b.status))
+        .filter((b) => [b.creatorPhone, b.joinerPhone].includes(phone) && ['playing', 'dispute'].includes(b.status) && !completedStatuses.includes(b.status))
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
       if (!list.length) {
@@ -601,7 +641,7 @@
       }
 
       runningBattles.innerHTML = list.map((b) => `
-        <div class="card">
+        <div class="card" id="running-${b.id}" data-battle-id="${b.id}">
           <div class="row space-between">
             <strong>Battle ₹${b.amount}</strong>
             <span class="status ${statusClass(b.status)}">${b.status.toUpperCase()}</span>
@@ -661,6 +701,13 @@
 
     onValue(ref(db, 'battles'), (snap) => {
       const battles = snap.val() || {};
+      Object.values(battles).forEach((battle) => {
+        if (!battle?.id) return;
+        if (['completed', 'win', 'lost'].includes(battle.status)) {
+          const node = document.getElementById(`running-${battle.id}`);
+          if (node) node.remove();
+        }
+      });
       renderOpenBattles(battles);
       renderRunningBattles(battles);
     });
