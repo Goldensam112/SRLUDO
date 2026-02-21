@@ -27,6 +27,26 @@ let state = loadState();
 
 const $ = (id) => document.getElementById(id);
 
+function setSection(sectionId) {
+  document.querySelectorAll('.app-section').forEach((section) => {
+    section.classList.toggle('hidden', section.id !== sectionId);
+  });
+  document.querySelectorAll('[data-section-target]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.sectionTarget === sectionId);
+  });
+  closeDrawer();
+}
+
+function openDrawer() {
+  $('sidebar').classList.add('open');
+  $('drawerOverlay').classList.remove('hidden');
+}
+
+function closeDrawer() {
+  $('sidebar').classList.remove('open');
+  $('drawerOverlay').classList.add('hidden');
+}
+
 function payoutForEntry(entry) {
   const commission = entry >= 500 ? 0.03 : 0.05;
   return Math.round(entry * 2 * (1 - commission));
@@ -113,13 +133,22 @@ function renderAll() {
   lockKycUI();
 }
 
-$('goArena').onclick = () => $('arena').classList.toggle('hidden');
+$('menuToggle').onclick = openDrawer;
+$('drawerOverlay').onclick = closeDrawer;
+$('goArena').onclick = () => setSection('arenaSection');
 $('openRules').onclick = () => $('rulesModal').classList.remove('hidden');
+
+document.querySelectorAll('[data-section-target]').forEach((btn) => {
+  btn.onclick = () => setSection(btn.dataset.sectionTarget);
+});
 document.querySelectorAll('[data-close-modal]').forEach((btn) => {
   btn.onclick = () => $(btn.dataset.closeModal).classList.add('hidden');
 });
 document.querySelectorAll('[data-open-modal]').forEach((btn) => {
-  btn.onclick = () => $(btn.dataset.openModal).classList.remove('hidden');
+  btn.onclick = () => {
+    $(btn.dataset.openModal).classList.remove('hidden');
+    closeDrawer();
+  };
 });
 
 $('entryAmount').oninput = () => {
@@ -276,8 +305,10 @@ channel.onmessage = () => {
 };
 
 setInterval(() => {
-  $('livePlayers').textContent = 1200 + Math.floor(Math.random() * 800);
-  $('liveDot').classList.toggle('alt');
+  const live = 1200 + Math.floor(Math.random() * 800);
+  $('livePlayers').textContent = live;
+  $('livePlayersDesktop').textContent = live;
 }, 1200);
 
+setSection('homeSection');
 renderAll();
