@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SR LUDO | Premium Battle Arena</title>
-  
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';">
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -174,7 +171,7 @@
 
         <button id="loginBtn" class="btn" type="button">Continue with Phone</button>
         <div class="signin-wrap">
-          <div class="pe_signin_button" data-client-id="17286597723145724436" data-redirect-url="" data-theme="dark"></div>
+          <div class="pe_signin_button" data-client-id="17286597723145724436" data-redirect-url="index.html" data-theme="dark"></div>
         </div>
         <div class="hint">Secure OTP-less login via Phone.Email. Your verified number is used to fetch your wallet and history in real time.</div>
       </div>
@@ -201,7 +198,7 @@
         <article class="card">
           <h3>WhatsApp Support</h3>
           <p>Need help with wallet, deposits, or withdrawals? Our support team is online.</p>
-          <a class="support-link" href="https://wa.me/916261642944" target="_blank" rel="noopener">Chat on WhatsApp ↗</a>
+          <a class="support-link" href="https://wa.me/919999999999" target="_blank" rel="noopener">Chat on WhatsApp ↗</a>
         </article>
       </main>
 
@@ -209,7 +206,7 @@
         <a href="#" class="nav-item"><span>🏠</span><span>Home</span></a>
         <a href="battles.html" class="nav-item"><span>🎮</span><span>Battles</span></a>
         <a href="wallet.html" class="nav-item"><span>💼</span><span>Wallet</span></a>
-        <a href="#" class="nav-item"><span>👤</span><span>Profile</span></a>
+        <a href="profile.html" class="nav-item"><span>👤</span><span>Profile</span></a>
       </nav>
     </section>
   </div>
@@ -233,31 +230,53 @@
   </section>
 
   <script>
+    const normalizePhoneRaw = (rawPhone) => {
+      if (!rawPhone) return null;
+      const cleaned = rawPhone.toString().replace(/[^\d+]/g, '');
+      if (!cleaned) return null;
+      return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
+    };
+
     window.phoneEmailListener = async function phoneEmailListener(userObj) {
       try {
-        let verifiedPhone = "";
-        
-        // Handling direct response or JSON URL fetch
-        if (userObj?.user_json_url) {
-          const response = await fetch(userObj.user_json_url);
-          const details = await response.json();
-          verifiedPhone = (details.user_country_code || "") + (details.user_phone_number || details.phone_no || "");
-        } else {
-          verifiedPhone = userObj?.phone_no || userObj?.phone || userObj?.ph_no;
+        const directPhone = normalizePhoneRaw(
+          userObj?.phone_no || userObj?.phone || userObj?.ph_no || `${userObj?.country_code || ''}${userObj?.phone_no || ''}`
+        );
+
+        if (directPhone) {
+          localStorage.setItem('sr_ludo_phone', directPhone);
+          localStorage.setItem('sr_ludo_phone_verified', '1');
+          window.location.href = window.location.pathname;
+          return;
         }
 
-        if (verifiedPhone) {
-          const cleanPhone = verifiedPhone.startsWith('+') ? verifiedPhone : `+${verifiedPhone}`;
-          localStorage.setItem('sr_ludo_phone', cleanPhone);
-          localStorage.setItem('sr_ludo_phone_verified', '1');
-          window.location.href = window.location.origin + window.location.pathname;
-        } else {
-          alert("Login verify nahi hua. Please try again.");
+        if (!userObj?.user_json_url) {
+          throw new Error('Verified phone data missing in Phone.Email callback.');
         }
+
+        const response = await fetch(userObj.user_json_url);
+        const details = await response.json();
+        const verifiedPhone = normalizePhoneRaw(`${details.country_code || ''}${details.phone_no || details.ph_no || ''}`);
+
+        if (!verifiedPhone) {
+          throw new Error('Unable to parse verified phone from Phone.Email response.');
+        }
+
+        localStorage.setItem('sr_ludo_phone', verifiedPhone);
+        localStorage.setItem('sr_ludo_phone_verified', '1');
+        window.location.href = window.location.pathname;
       } catch (error) {
-        console.error('Phone.Email Error:', error);
+        console.error('Phone.Email verification failed:', error);
+        alert('Login verify nahi hua. Please try again.');
       }
     };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const pe = document.querySelector('.pe_signin_button');
+      if (pe && (!pe.dataset.redirectUrl || pe.dataset.redirectUrl === 'index.html')) {
+        pe.dataset.redirectUrl = `${window.location.origin}${window.location.pathname}`;
+      }
+    });
   </script>
 
   <script type="module">
@@ -299,6 +318,7 @@
     const normalizePhone = (rawPhone) => {
       if (!rawPhone) return null;
       const cleaned = rawPhone.toString().replace(/[^\d+]/g, '');
+      if (!cleaned) return null;
       return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
     };
 
@@ -318,12 +338,26 @@
         await set(userRef, {
           phone,
           name: `Player_${lastDigits}`,
+          full_name: '',
           balance: 0,
           win_balance: 0,
+          referral_balance: 0,
           kyc_status: 'pending',
+          aadhar_f: '',
+          aadhar_b: '',
+          bank_acc: '',
+          bank_ifsc: '',
+          upi_id: '',
           referredBy: referralCode || null,
           time: Date.now()
         });
+
+        if (referralCode) {
+          await update(ref(db, `referrals/${referralCode}`), {
+            lastReferredPhone: phone,
+            lastReferredAt: Date.now()
+          });
+        }
       }
 
       onValue(userRef, (snap) => {
@@ -333,50 +367,76 @@
       });
     };
 
+    const extractPhone = () => {
+      const params = new URLSearchParams(window.location.search);
+      return normalizePhone(params.get('phone_no') || params.get('phone') || localStorage.getItem('sr_ludo_phone'));
+    };
+
+    const loginUsingPhoneEmailButton = () => {
+      const peButton = document.querySelector('.pe_signin_button button, .pe_signin_button a');
+      if (peButton) {
+        peButton.click();
+        return;
+      }
+      alert('Phone.Email button is still loading. Please try again in a second.');
+    };
+
+    const openHistoryModal = async (type) => {
+      if (!currentPhone) return;
+      modalTitle.textContent = type.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      historyList.innerHTML = '<p class="hint">Loading records...</p>';
+      modal.classList.add('show');
+      overlay.classList.add('show');
+      closeSidebar();
+
+      const historyRef = query(ref(db, `${type}/${currentPhone}`), orderByChild('time'), limitToLast(15));
+      const snap = await get(historyRef);
+      const list = snap.val();
+
+      if (!list) {
+        historyList.innerHTML = '<p class="hint">No records found.</p>';
+        return;
+      }
+
+      const entries = Object.entries(list).sort((a, b) => (b[1].time || b[1].timestamp || 0) - (a[1].time || a[1].timestamp || 0));
+      historyList.innerHTML = entries.map(([id, item]) => {
+        const amount = item.amount ?? item.entry_fee ?? '-';
+        const status = item.status ?? item.result ?? 'N/A';
+        const recordTime = item.time || item.timestamp;
+        const date = recordTime ? new Date(recordTime).toLocaleString('en-IN') : '-';
+        return `<div class="record"><strong>#${id}</strong><br>Amount: ₹${amount}<br>Status: ${status}<br>${date}</div>`;
+      }).join('');
+    };
+
     const tryAutoLogin = async () => {
-      const phone = localStorage.getItem('sr_ludo_phone');
+      const phone = extractPhone();
       if (!phone) return;
       currentPhone = phone;
+      localStorage.setItem('sr_ludo_phone', phone);
       await createUserIfMissing(phone);
       showDashboard();
     };
 
-    loginBtn.addEventListener('click', () => {
-      const peBtn = document.querySelector('.pe_signin_button button, .pe_signin_button a');
-      if (peBtn) peBtn.click();
-      else alert('Loading... Please try again.');
-    });
-
+    loginBtn.addEventListener('click', loginUsingPhoneEmailButton);
     menuBtn.addEventListener('click', openSidebar);
     overlay.addEventListener('click', () => { closeSidebar(); closeModal(); });
     closeModalBtn.addEventListener('click', closeModal);
     logoutBtn.addEventListener('click', () => {
       localStorage.removeItem('sr_ludo_phone');
-      location.reload();
+      localStorage.removeItem('sr_ludo_phone_verified');
+      window.location.href = window.location.pathname;
     });
 
-    historyLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
+    historyLinks.forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
         openHistoryModal(link.dataset.type);
       });
     });
 
-    const openHistoryModal = async (type) => {
-      if (!currentPhone) return;
-      modalTitle.textContent = type.replace('_', ' ').toUpperCase();
-      historyList.innerHTML = '<p>Loading...</p>';
-      modal.classList.add('show');
-      overlay.classList.add('show');
-      const snap = await get(query(ref(db, `${type}/${currentPhone}`), limitToLast(15)));
-      const list = snap.val();
-      if (!list) { historyList.innerHTML = 'No records.'; return; }
-      historyList.innerHTML = Object.entries(list).reverse().map(([id, item]) => 
-        `<div class="record">#${id} - ₹${item.amount || 0} [${item.status || 'N/A'}]</div>`
-      ).join('');
-    };
-
-    classicCard.addEventListener('click', () => { window.location.href = 'battles.html'; });
+    classicCard.addEventListener('click', () => {
+      window.location.href = 'battles.html';
+    });
 
     tryAutoLogin();
   </script>
