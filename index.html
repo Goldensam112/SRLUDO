@@ -328,13 +328,41 @@
     const formatINR = (value = 0) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
     const showDashboard = () => { loginScreen.classList.add('hidden'); dashboard.classList.remove('hidden'); };
 
+    const normalizeReferralCode = (value) => (value || '').toString().trim().toUpperCase();
+
+    const resolveReferrerPhone = async (code, currentPhone) => {
+      const normalizedCode = normalizeReferralCode(code);
+      if (!normalizedCode) return null;
+
+      const asPhone = normalizePhone(normalizedCode);
+      if (asPhone && asPhone !== currentPhone) {
+        const asPhoneSnap = await get(ref(db, `users/${asPhone}`));
+        if (asPhoneSnap.exists()) return asPhone;
+      }
+
+      const codeSnap = await get(ref(db, `referral_codes/${normalizedCode}/phone`));
+      const referrerPhone = normalizePhone(codeSnap.val());
+      if (referrerPhone && referrerPhone !== currentPhone) return referrerPhone;
+      return null;
+    };
+
     const createUserIfMissing = async (phone) => {
       const userRef = ref(db, `users/${phone}`);
       const userSnap = await get(userRef);
-      const referralCode = referralCodeInput.value.trim();
+      const referralCode = normalizeReferralCode(referralCodeInput.value);
+      const myReferralCode = phone.replace(/\D/g, '').slice(-6) || phone.replace(/\D/g, '');
 
       if (!userSnap.exists()) {
         const lastDigits = phone.slice(-4);
+        let referrerPhone = null;
+
+        if (referralCode) {
+          referrerPhone = await resolveReferrerPhone(referralCode, phone);
+          if (!referrerPhone) {
+            throw new Error('Invalid referral code. Please check and try again.');
+          }
+        }
+
         await set(userRef, {
           phone,
           name: `Player_${lastDigits}`,
@@ -348,15 +376,27 @@
           bank_acc: '',
           bank_ifsc: '',
           upi_id: '',
-          referredBy: referralCode || null,
+          myReferralCode,
+          referredBy: referrerPhone,
           time: Date.now()
         });
 
-        if (referralCode) {
-          await update(ref(db, `referrals/${referralCode}`), {
-            lastReferredPhone: phone,
-            lastReferredAt: Date.now()
+        await set(ref(db, `referral_codes/${myReferralCode}`), {
+          phone,
+          createdAt: Date.now()
+        });
+
+        if (referrerPhone) {
+          await set(ref(db, `referrals/${referrerPhone}/friends_list/${phone}`), {
+            phone,
+            joinedAt: Date.now()
           });
+        }
+      } else {
+        const existing = userSnap.val() || {};
+        if (!existing.myReferralCode) {
+          await update(userRef, { myReferralCode });
+          await set(ref(db, `referral_codes/${myReferralCode}`), { phone, createdAt: Date.now() });
         }
       }
 
@@ -413,8 +453,13 @@
       if (!phone) return;
       currentPhone = phone;
       localStorage.setItem('sr_ludo_phone', phone);
-      await createUserIfMissing(phone);
-      showDashboard();
+      try {
+        await createUserIfMissing(phone);
+        showDashboard();
+      } catch (error) {
+        console.error(error);
+        alert(error.message || 'Unable to complete signup/login.');
+      }
     };
 
     loginBtn.addEventListener('click', loginUsingPhoneEmailButton);
