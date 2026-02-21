@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SR LUDO | Premium Battle Arena</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -172,7 +171,7 @@
 
         <button id="loginBtn" class="btn" type="button">Continue with Phone</button>
         <div class="signin-wrap">
-          <div class="pe_signin_button" data-client-id="17286597723145724436" data-redirect-url="" data-theme="dark"></div>
+          <div class="pe_signin_button" data-client-id="17286597723145724436" data-redirect-url="index.html" data-theme="dark"></div>
         </div>
         <div class="hint">Secure OTP-less login via Phone.Email. Your verified number is used to fetch your wallet and history in real time.</div>
       </div>
@@ -231,21 +230,53 @@
   </section>
 
   <script>
-    async function phoneEmailListener(userObj) {
+    const normalizePhoneRaw = (rawPhone) => {
+      if (!rawPhone) return null;
+      const cleaned = rawPhone.toString().replace(/[^\d+]/g, '');
+      if (!cleaned) return null;
+      return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
+    };
+
+    window.phoneEmailListener = async function phoneEmailListener(userObj) {
       try {
-        if (!userObj?.user_json_url) return;
-        const response = await fetch(userObj.user_json_url);
-        const details = await response.json();
-        const verifiedPhone = `${details.country_code || ''}${details.phone_no || ''}`;
-        if (verifiedPhone) {
-          localStorage.setItem('sr_ludo_phone', verifiedPhone.startsWith('+') ? verifiedPhone : `+${verifiedPhone}`);
+        const directPhone = normalizePhoneRaw(
+          userObj?.phone_no || userObj?.phone || userObj?.ph_no || `${userObj?.country_code || ''}${userObj?.phone_no || ''}`
+        );
+
+        if (directPhone) {
+          localStorage.setItem('sr_ludo_phone', directPhone);
           localStorage.setItem('sr_ludo_phone_verified', '1');
           window.location.href = window.location.pathname;
+          return;
         }
+
+        if (!userObj?.user_json_url) {
+          throw new Error('Verified phone data missing in Phone.Email callback.');
+        }
+
+        const response = await fetch(userObj.user_json_url);
+        const details = await response.json();
+        const verifiedPhone = normalizePhoneRaw(`${details.country_code || ''}${details.phone_no || details.ph_no || ''}`);
+
+        if (!verifiedPhone) {
+          throw new Error('Unable to parse verified phone from Phone.Email response.');
+        }
+
+        localStorage.setItem('sr_ludo_phone', verifiedPhone);
+        localStorage.setItem('sr_ludo_phone_verified', '1');
+        window.location.href = window.location.pathname;
       } catch (error) {
-        console.error('Phone.Email verification fetch failed:', error);
+        console.error('Phone.Email verification failed:', error);
+        alert('Login verify nahi hua. Please try again.');
       }
-    }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const pe = document.querySelector('.pe_signin_button');
+      if (pe && (!pe.dataset.redirectUrl || pe.dataset.redirectUrl === 'index.html')) {
+        pe.dataset.redirectUrl = `${window.location.origin}${window.location.pathname}`;
+      }
+    });
   </script>
 
   <script type="module">
@@ -342,7 +373,7 @@
     };
 
     const loginUsingPhoneEmailButton = () => {
-      const peButton = document.querySelector('.pe_signin_button button, .pe_signin_button a, .pe_signin_button');
+      const peButton = document.querySelector('.pe_signin_button button, .pe_signin_button a');
       if (peButton) {
         peButton.click();
         return;
