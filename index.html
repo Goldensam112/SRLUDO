@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR Ludo Live</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>SR Ludo</h2>
+    <button data-open-modal="matchHistoryModal">Match History</button>
+    <button data-open-modal="depositHistoryModal">Deposit History</button>
+    <button data-open-modal="withdrawHistoryModal">Withdraw History</button>
+  </aside>
+
+  <main>
+    <header class="topbar card">
+      <div>
+        <h1>Home Dashboard</h1>
+        <p class="muted">Competitive Ludo, built for real-time battles.</p>
+      </div>
+      <div class="live-box">
+        <span id="liveDot" class="live-dot"></span>
+        <strong>Live Players:</strong> <span id="livePlayers">0</span>
+      </div>
+    </header>
+
+    <section class="grid two">
+      <article class="card action-card" id="goArena">
+        <h3>Classic Ludo Live</h3>
+        <p>Join real-time battles with smart wallet deduction and strict payouts.</p>
+      </article>
+      <a class="card action-card" href="https://wa.me/919999999999" target="_blank" rel="noopener noreferrer">
+        <h3>WhatsApp Support</h3>
+        <p>Get instant support for battle issues and wallet requests.</p>
+      </a>
+    </section>
+
+    <section id="arena" class="card hidden">
+      <div class="row spread">
+        <h2>Battle Arena</h2>
+        <button id="openRules" class="secondary">Rules</button>
+      </div>
+      <div class="grid two">
+        <div>
+          <h3>Wallets</h3>
+          <p>Winning Wallet: ₹<span id="winBalance"></span></p>
+          <p>Cash Wallet: ₹<span id="cashBalance"></span></p>
+          <div class="row">
+            <input id="depositAmount" type="number" min="1" placeholder="Deposit ₹" />
+            <button id="depositBtn">Deposit</button>
+          </div>
+          <div class="row">
+            <input id="withdrawAmount" type="number" min="1" placeholder="Withdraw ₹" />
+            <button id="withdrawBtn" class="secondary">Withdraw</button>
+          </div>
+        </div>
+        <div>
+          <h3>Create Battle</h3>
+          <input id="entryAmount" type="number" min="50" step="50" placeholder="Entry (50,100,150...)" />
+          <div class="row">
+            <button id="createBattleBtn">Create</button>
+            <button id="joinMockBtn" class="secondary">Join as Rival</button>
+            <button id="cancelBattleBtn" class="danger">Cancel</button>
+          </div>
+          <p class="muted" id="deductionPreview">Deduction: -</p>
+          <p id="battleState"></p>
+        </div>
+      </div>
+
+      <div id="creatorCodeSection" class="hidden panel">
+        <h3>Creator: Enter Room Code</h3>
+        <div class="row">
+          <input id="roomCodeInput" placeholder="e.g., LUDO1234" />
+          <button id="saveRoomCodeBtn">Save Code</button>
+        </div>
+      </div>
+
+      <div id="joinerCodeSection" class="hidden panel center">
+        <h3>Joiner View</h3>
+        <p class="muted">Room code appears instantly once creator saves.</p>
+        <div class="room-code" id="roomCodeDisplay">Waiting...</div>
+      </div>
+
+      <div id="resultSection" class="hidden panel">
+        <h3>Result Declaration</h3>
+        <div class="row">
+          <button id="lostBtn" class="danger">I LOST</button>
+          <button id="winBtn">I WIN</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Referral Analytics</h2>
+      <p>Lifetime 2% commission from every win your referred users achieve.</p>
+      <div class="row">
+        <select id="refUserSelect"></select>
+        <input id="refWinAmount" type="number" min="1" placeholder="Referred user win ₹" />
+        <button id="creditReferralBtn">Record Win</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Registered</th>
+            <th>Lifetime Win</th>
+            <th>Commission Earned</th>
+          </tr>
+        </thead>
+        <tbody id="refTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Profile & KYC</h2>
+      <form id="kycForm" class="grid two">
+        <input required name="holderName" placeholder="Account Holder Name" />
+        <input required name="upiId" placeholder="UPI ID" />
+        <input required name="bankAccount" placeholder="Bank Account Number" />
+        <input required name="ifsc" placeholder="IFSC" />
+        <input required name="aadharNumber" placeholder="Aadhar Number" />
+        <input required name="aadharFront" type="file" accept="image/*" />
+        <button type="submit">Submit KYC</button>
+      </form>
+      <p id="kycLockNotice" class="muted"></p>
+      <a id="messageAdminLink" href="https://wa.me/919999999999" target="_blank" class="hidden">Message Admin for changes</a>
+    </section>
+  </main>
+
+  <div id="rulesModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Battle Rules</h3>
+      <ul>
+        <li>Entry must be in multiples of ₹50.</li>
+        <li>Deduction prioritizes Winning Wallet, then Cash Wallet.</li>
+        <li>₹100 battle pays ₹190 winner. ₹500 battle pays ₹970 winner.</li>
+        <li>Cancellation refunds amount to Cash Wallet.</li>
+      </ul>
+      <button data-close-modal="rulesModal">Close</button>
+    </div>
+  </div>
+
+  <div id="screenshotModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Upload Winning Screenshot (Mandatory)</h3>
+      <input id="imgbbKey" placeholder="ImgBB API Key" />
+      <input id="winningScreenshot" type="file" accept="image/*" />
+      <p id="uploadStatus" class="muted"></p>
+      <div class="row">
+        <button id="submitWinEvidence">Submit</button>
+        <button data-close-modal="screenshotModal" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="matchHistoryModal" class="modal hidden"><div class="modal-card"><h3>Match History (last 20)</h3><ul id="matchHistoryList"></ul><button data-close-modal="matchHistoryModal">Close</button></div></div>
+  <div id="depositHistoryModal" class="modal hidden"><div class="modal-card"><h3>Deposit History (last 20)</h3><ul id="depositHistoryList"></ul><button data-close-modal="depositHistoryModal">Close</button></div></div>
+  <div id="withdrawHistoryModal" class="modal hidden"><div class="modal-card"><h3>Withdraw History (last 20)</h3><ul id="withdrawHistoryList"></ul><button data-close-modal="withdrawHistoryModal">Close</button></div></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
