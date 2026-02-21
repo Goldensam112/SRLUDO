@@ -260,10 +260,7 @@
       get,
       set,
       update,
-      runTransaction,
-      query,
-      orderByChild,
-      equalTo
+      runTransaction
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     const firebaseConfig = {
@@ -276,7 +273,7 @@
       appId: '1:1080387235822:web:77faea231641837950e8ff'
     };
 
-    const IMGBB_API_KEY = 'YOUR_IMGBB_API_KEY';
+    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'YOUR_IMGBB_API_KEY';
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -359,29 +356,34 @@
 
     async function creditReferralCommission(winnerPhone, winningAmount) {
       const winnerSnap = await get(ref(db, `users/${winnerPhone}`));
-      const winner = winnerSnap.val();
-      const code = winner?.referredBy;
-      if (!code) return;
-
-      let referrerPhone = null;
-      const byCode = await get(query(ref(db, 'users'), orderByChild('referral_code'), equalTo(code)));
-      if (byCode.exists()) {
-        const first = Object.keys(byCode.val())[0];
-        referrerPhone = first;
-      }
-
-      if (!referrerPhone) {
-        const mapSnap = await get(ref(db, `referrals/${code}/phone`));
-        referrerPhone = mapSnap.val() || null;
-      }
-
+      const winner = winnerSnap.val() || {};
+      const referrerPhone = normalizePhone(winner.referredBy);
       if (!referrerPhone || referrerPhone === winnerPhone) return;
-      const commission = Number((Number(winningAmount) * 0.02).toFixed(2));
+
+      const commission = Number((Number(winningAmount || 0) * 0.02).toFixed(2));
+      if (!commission) return;
+
       await runTransaction(ref(db, `users/${referrerPhone}`), (user) => {
         if (!user) return user;
-        user.balance = Number(user.balance || 0) + commission;
         user.referral_balance = Number(user.referral_balance || 0) + commission;
         return user;
+      });
+
+      await runTransaction(ref(db, `referrals/${referrerPhone}/earnings_total`), (amount) => Number(amount || 0) + commission);
+      await set(ref(db, `referrals/${referrerPhone}/friends_list/${winnerPhone}`), {
+        phone: winnerPhone,
+        joinedAt: winner.time || Date.now()
+      });
+
+      const historyRef = push(ref(db, `referrals/${referrerPhone}/referral_history`));
+      await set(historyRef, {
+        id: historyRef.key,
+        winnerPhone,
+        winnerName: winner.name || winner.full_name || winnerPhone,
+        message: `Earned ₹${commission} from ${(winner.name || winner.full_name || 'Player')}'s win.`,
+        amount: commission,
+        sourcePrize: Number(winningAmount || 0),
+        time: Date.now()
       });
     }
 
