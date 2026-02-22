@@ -363,12 +363,9 @@
 
 
     const uploadDepositScreenshot = async (file) => {
-      if (!IMGBB_API_KEY || IMGBB_API_KEY === 'ca44783bda6779b5e3913432bd243b30') {
-        throw new Error('ImgBB API key missing. Please set sr_ludo_imgbb_api_key.');
-      }
-      const fd = new FormData();
+            const fd = new FormData();
       fd.append('image', file);
-      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${ca44783bda6779b5e3913432bd243b30}`, { method: 'POST', body: fd });
+      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
       const json = await resp.json();
       const url = json?.data?.url;
       if (!resp.ok || !url) throw new Error('Screenshot upload failed.');
