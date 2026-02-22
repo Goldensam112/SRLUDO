@@ -309,6 +309,11 @@
     let battlesCache = {};
 
     const fmt = (n = 0) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+    const maskPhone = (ph) => {
+  if (!ph) return 'SR Player';
+  const phStr = ph.toString();
+  return `SR Player-${phStr.slice(-4)}`; // Ye sirf aakhri 4 digit dikhayega
+};
     const statusClass = (st = '') => ({ open: 'st-open', playing: 'st-playing', pending: 'st-dispute', dispute: 'st-dispute', completed: 'st-completed' }[st] || '');
     const computeWinAmount = (amount) => {
       const a = Number(amount || 0);
@@ -642,9 +647,8 @@
             <strong>Battle ₹${b.amount}</strong>
             <span class="status ${statusClass(b.status)}">${b.status.toUpperCase()}</span>
           </div>
-          <div class="small muted">Win: ${fmt(b.winAmount)} • Creator: ${b.creatorPhone} • Joiner: ${b.joinerPhone || '-'}</div>
-          ${b.winnerPhone ? `<div class="small" style="margin-top:6px;color:var(--ok);">Winner: ${b.winnerPhone}</div>` : ''}
-          ${battleControls(b)}
+          <div class="small muted">Win: ${fmt(b.winAmount)} • Creator: ${maskPhone(b.creatorPhone)} • Joiner: ${maskPhone(b.joinerPhone)}</div>
+${b.winnerPhone ? `<div class="small" style="margin-top:6px;color:var(--ok);">Winner: ${maskPhone(b.winnerPhone)}</div>` : ''}          ${battleControls(b)}
         </div>
       `).join('');
     }
