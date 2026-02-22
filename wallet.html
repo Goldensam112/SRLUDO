@@ -487,25 +487,23 @@ const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = a
       }
     };
 
- const submitWithdraw = async () => {
+const submitWithdraw = async () => {
   const amount = Number(document.getElementById('withdrawAmount').value);
   const method = currentMethod;
 
-  // 1. KYC Check
+  // 1. Basic Verification
   if (!userData || userData.kyc_status !== 'verified') {
     alert('Please complete KYC first!');
     window.location.href = 'profile.html';
     return;
   }
 
-  // 2. Payment Details Check (Jo aapne pucha tha)
   if (!hasPaymentDetails(method)) {
-    alert('Please save your selected payment method details in profile first.');
+    alert('Please save your payment details in profile first.');
     window.location.href = 'profile.html';
     return;
   }
 
-  // 3. Amount Validation
   if (!amount || amount < 100) return alert('Minimum withdrawal is ₹100.');
 
   submitWithdrawBtn.disabled = true;
@@ -513,28 +511,27 @@ const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = a
 
   try {
     currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
-    if (!currentPhone) throw new Error('Login required. Please login again.');
     
-    // 4. TRANSACTION: Pehle balance check aur cut karo
+    // 2. TRANSACTION: Pehle balance check karo aur cut karo (Main logic yahi hai)
     const userRef = ref(db, `users/${currentPhone}`);
     const tx = await runTransaction(userRef, (user) => {
       if (!user) return user;
       const currentWinBal = Number(user.win_balance || 0);
       
       if (currentWinBal < amount) {
-        return; // Balance kam hai toh transaction cancel
+        return; // Agar balance kam hai toh transaction cancel ho jayega
       }
       
-      // Balance minus ho raha hai
+      // Paisa cut kar rahe hain
       user.win_balance = currentWinBal - amount;
       return user;
     });
 
     if (!tx.committed) {
-      throw new Error('Insufficient winnings balance.');
+      throw new Error('Insufficient winnings balance or account error.');
     }
 
-    // 5. Database Entry: Request bano
+    // 3. Request Submit karein (Jab balance cut ho jaye tabhi)
     const reqRef = push(ref(db, 'withdraw_requests'));
     await set(reqRef, {
       id: reqRef.key,
@@ -554,9 +551,11 @@ const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = a
       time: Date.now()
     });
 
-    alert(`Success! ₹${amount} Winning Balance se cut gaye hain.`);
+    alert(`Success! ₹${amount} aapke wallet se cut gaye hain aur request submit ho gayi hai.`);
     closeModal(withdrawModal);
     document.getElementById('withdrawAmount').value = '';
+    
+    // History refresh karein
     if (activeTab === 'withdraw') loadHistory();
 
   } catch (error) {
