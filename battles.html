@@ -232,11 +232,10 @@
   <section id="rulesModal" class="modal" role="dialog" aria-modal="true">
     <h3 class="title">Battle Rules</h3>
     <ul class="muted small">
-     <li>Agar popular code aye toh aap screen recording karke game left kare</li>
-      <li>Agar samne wale theme Se khel raha he apko nahi khelna toh opponent ki 2 goti khulne se phele game screen recording karke game left kare</li>
-      <li>Fake Screenshot Dalne Par 50 Rupay Penalty Lagegi</li>
-      <li>withdrawl within 15 minutes me diya jata hai</li>
-       <li>game cancel karte time reason aur screenshot dono admin ko send kare</li>
+      <li>₹100 battle payout = ₹190 to winner.</li>
+      <li>₹500 battle payout = ₹970 to winner.</li>
+      <li>Winner/Loser declarations are final unless dispute opened with screenshot proof.</li>
+      <li>2% referral commission is credited to referrer cash wallet on successful completion.</li>
     </ul>
     <button class="btn full" data-close-modal="rulesModal" type="button">Close</button>
   </section>
@@ -309,7 +308,7 @@
     let pendingWinBattleId = null;
 
     const fmt = (n = 0) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
-    const statusClass = (st = '') => ({ open: 'st-open', playing: 'st-playing', dispute: 'st-dispute', completed: 'st-completed' }[st] || '');
+    const statusClass = (st = '') => ({ open: 'st-open', playing: 'st-playing', pending: 'st-dispute', dispute: 'st-dispute', completed: 'st-completed' }[st] || '');
     const computeWinAmount = (amount) => ({ 100: 190, 500: 970 }[Number(amount)] ?? Math.floor(Number(amount) * 1.9));
 
     const showModal = (node) => { node.classList.add('show'); overlay.classList.add('show'); };
@@ -553,7 +552,7 @@
           if (!battle || battle.status !== 'playing' || battle.settledAt) return;
           const isParticipant = [battle.creatorPhone, battle.joinerPhone].includes(phone);
           if (!isParticipant) return;
-          battle.status = 'dispute';
+          battle.status = 'pending';
           battle.result_status = 'pending';
           battle.win_claim_by = phone;
           battle.screenshot_url = url;
@@ -577,6 +576,109 @@
         alert(error.message || 'Unable to submit claim.');
       } finally {
         submitWinBtn.disabled = false;
+      }
+    }
+
+
+    async function deductPenaltyFromCash(userPhone, amount) {
+      await runTransaction(ref(db, `users/${userPhone}`), (user) => {
+        if (!user) return user;
+        const curr = Number(user.balance || 0);
+        user.balance = Math.max(0, curr - Number(amount || 0));
+        return user;
+      });
+    }
+
+    async function processAdminSettlement(battleId) {
+      const battleRef = ref(db, `battles/${battleId}`);
+      const lockTx = await runTransaction(battleRef, (battle) => {
+        if (!battle || battle.settlement_processed || battle.settlement_processing) return battle;
+        const decision = (battle.result_status || '').toString().toLowerCase();
+        if (!['approved', 'rejected', 'reject'].includes(decision)) return battle;
+        battle.settlement_processing = true;
+        battle.settlement_processing_by = phone;
+        battle.settlement_processing_at = Date.now();
+        return battle;
+      });
+
+      if (!lockTx.committed) return;
+      const battle = lockTx.snapshot.val() || {};
+      const decision = (battle.result_status || '').toString().toLowerCase();
+      const claimBy = battle.win_claim_by || battle.winnerPhone || '';
+      const participants = [battle.creatorPhone, battle.joinerPhone].filter(Boolean);
+      const opposite = participants.find((p) => p !== claimBy) || '';
+
+      let winnerPhone = '';
+      let loserPhone = '';
+      if (decision === 'approved') {
+        winnerPhone = claimBy;
+        loserPhone = opposite;
+      } else {
+        winnerPhone = opposite;
+        loserPhone = claimBy;
+      }
+
+      if (!winnerPhone || !loserPhone) {
+        await update(battleRef, {
+          settlement_processing: false,
+          settlement_error: 'Missing participant mapping for settlement.',
+          updatedAt: Date.now()
+        });
+        return;
+      }
+
+      try {
+        const winAmt = Number(battle.winAmount || 0);
+        await creditWinning(winnerPhone, winAmt);
+        await creditReferralCommission(winnerPhone, winAmt);
+
+        if (decision !== 'approved') {
+          await deductPenaltyFromCash(loserPhone, 50);
+        }
+
+        const finalBattle = {
+          ...battle,
+          winnerPhone,
+          loserPhone,
+          status: 'completed',
+          result_status: decision === 'approved' ? 'approved' : 'rejected',
+          resultType: decision === 'approved' ? 'win-approved-by-admin' : 'win-claim-rejected-by-admin',
+          penalty_applied: decision === 'approved' ? 0 : 50,
+          settlement_processed: true,
+          settlement_processed_at: Date.now(),
+          settlement_processing: false,
+          settledAt: Date.now(),
+          updatedAt: Date.now()
+        };
+
+        const getHistoryStatus = (playerPhone) => {
+          if (playerPhone === winnerPhone) return 'win';
+          if (decision !== 'approved' && playerPhone === claimBy) return 'lost_fake_claim';
+          return 'lost';
+        };
+
+        await writeMatchHistoryEntry(finalBattle.creatorPhone, finalBattle, getHistoryStatus(finalBattle.creatorPhone));
+        await writeMatchHistoryEntry(finalBattle.joinerPhone, finalBattle, getHistoryStatus(finalBattle.joinerPhone));
+
+        await update(battleRef, {
+          winnerPhone,
+          loserPhone,
+          status: 'completed',
+          result_status: decision === 'approved' ? 'approved' : 'rejected',
+          resultType: finalBattle.resultType,
+          penalty_applied: finalBattle.penalty_applied,
+          settlement_processed: true,
+          settlement_processed_at: finalBattle.settlement_processed_at,
+          settlement_processing: false,
+          settledAt: finalBattle.settledAt,
+          updatedAt: finalBattle.updatedAt
+        });
+      } catch (error) {
+        await update(battleRef, {
+          settlement_error: error?.message || 'Settlement failed',
+          settlement_processing: false,
+          updatedAt: Date.now()
+        });
       }
     }
 
@@ -635,7 +737,7 @@
     function renderRunningBattles(data) {
       const completedStatuses = ['completed', 'win', 'lost'];
       const list = Object.values(data || {})
-        .filter((b) => [b.creatorPhone, b.joinerPhone].includes(phone) && ['playing', 'dispute'].includes(b.status) && !completedStatuses.includes(b.status))
+        .filter((b) => [b.creatorPhone, b.joinerPhone].includes(phone) && ['playing', 'pending', 'dispute'].includes(b.status) && !completedStatuses.includes(b.status))
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
       if (!list.length) {
@@ -706,6 +808,10 @@
       const battles = snap.val() || {};
       Object.values(battles).forEach((battle) => {
         if (!battle?.id) return;
+        const decision = (battle.result_status || '').toString().toLowerCase();
+        if (['approved', 'rejected', 'reject'].includes(decision) && !battle.settlement_processed) {
+          processAdminSettlement(battle.id);
+        }
         if (['completed', 'win', 'lost'].includes(battle.status)) {
           const node = document.getElementById(`running-${battle.id}`);
           if (node) node.remove();
