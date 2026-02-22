@@ -508,8 +508,8 @@ const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = a
       try {
         currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
         if (!currentPhone) throw new Error('Login required. Please login again.');
-        const reqRef = push(ref(db, `withdraw_requests/${currentPhone}`));
-        await set(reqRef, {
+// Path ko simple rakhein taaki filter kaam kare
+const reqRef = push(ref(db, 'withdraw_requests'));        await set(reqRef, {
           id: reqRef.key,
           phone: currentPhone,
           amount,
