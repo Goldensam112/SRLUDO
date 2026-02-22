@@ -232,7 +232,7 @@
   <section id="rulesModal" class="modal" role="dialog" aria-modal="true">
     <h3 class="title">Battle Rules</h3>
     <ul class="muted small">
-      <li>Agar popular code aye toh aap screen recording karke game left kare</li>
+       <li>Agar popular code aye toh aap screen recording karke game left kare</li>
       <li>Agar samne wale theme Se khel raha he apko nahi khelna toh opponent ki 2 goti khulne se phele game screen recording karke game left kare</li>
       <li>Fake Screenshot Dalne Par 50 Rupay Penalty Lagegi</li>
       <li>withdrawl within 15 minutes me diya jata hai</li>
@@ -274,7 +274,7 @@
       appId: '1:1080387235822:web:77faea231641837950e8ff'
     };
 
-    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('ca44783bda6779b5e3913432bd243b30') || 'ca44783bda6779b5e3913432bd243b30';
+    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'ca44783bda6779b5e3913432bd243b30';
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
@@ -528,12 +528,9 @@
     }
 
     async function uploadToImgBB(file) {
-      if (!IMGBB_API_KEY || IMGBB_API_KEY === 'ca44783bda6779b5e3913432bd243b30') {
-        throw new Error('ImgBB API key missing in battles.html');
-      }
       const fd = new FormData();
       fd.append('image', file);
-      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${ca44783bda6779b5e3913432bd243b30}`, { method: 'POST', body: fd });
+      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
       const json = await resp.json();
       const url = json?.data?.url;
       if (!url) throw new Error('Screenshot upload failed.');
