@@ -364,6 +364,21 @@
       });
     }
 
+    async function ensureUserRecord() {
+      const userRef = ref(db, `users/${phone}`);
+      const userSnap = await get(userRef);
+      if (userSnap.exists()) return;
+
+      await set(userRef, {
+        phone,
+        balance: 0,
+        win_balance: 0,
+        referral_balance: 0,
+        kyc_status: 'pending',
+        time: Date.now()
+      });
+    }
+
     async function createBattle() {
       const amount = Number(battleAmount.value);
       if (!validateAmount(amount)) {
@@ -373,6 +388,8 @@
 
       createBattleBtn.disabled = true;
       try {
+        const available = Number(myUser.win_balance || 0) + Number(myUser.balance || 0);
+        if (available < amount) throw new Error('Insufficient wallet balance.');
         const deduction = await deductSmartWallet(phone, amount);
         const battleRef = push(ref(db, 'battles'));
         await set(battleRef, {
@@ -561,4 +578,136 @@
             <div class="small muted">Win Amount: ${fmt(b.winAmount)} • ID: ${b.id}</div>
             <div class="row" style="margin-top:10px;">
               ${mine
-                ? `<button class="btn-dange
+                ? `<button class="btn-danger btn full" data-action="cancel" data-id="${b.id}" type="button">Cancel (Refund to Cash)</button>`
+                : `<button class="btn btn-gold full" data-action="join" data-id="${b.id}" type="button">Join Battle</button>`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function battleControls(b) {
+      const meCreator = b.creatorPhone === phone;
+      const meJoiner = b.joinerPhone === phone;
+      const meParticipant = meCreator || meJoiner;
+      if (!meParticipant) return '';
+
+      const roomCode = b.room_code || b.roomCode || '';
+      const roomLocked = Boolean(roomCode);
+      const roomInput = meCreator
+        ? `<div class="row" style="margin-top:8px;">
+            <input class="input" id="room-${b.id}" placeholder="Enter Room Code" value="${roomCode}" ${roomLocked ? 'disabled' : ''} />
+            <button class="btn btn-gold" data-action="set-room" data-id="${b.id}" type="button" ${roomLocked ? 'disabled' : ''}>${roomLocked ? 'LOCKED' : 'SET'}</button>
+           </div>
+           ${roomLocked ? '<div class="small muted" style="margin-top:6px;">Room code locked. It can only be set once.</div>' : ''}`
+        : (roomCode ? `<div class="room-code">${roomCode}</div>` : '<div class="small muted" style="margin-top:8px;">Waiting for creator to set room code...</div>');
+
+      const actionDisplay = roomCode ? 'flex' : 'none';
+      return `
+        ${roomInput}
+        <div class="row" style="margin-top:10px;display:${actionDisplay};">
+          <button class="btn btn-win full" data-action="i-win" data-id="${b.id}" type="button">I WIN</button>
+          <button class="btn btn-danger full" data-action="i-lost" data-id="${b.id}" type="button">I LOST</button>
+        </div>
+      `;
+    }
+
+    function renderRunningBattles(data) {
+      const completedStatuses = ['completed', 'win', 'lost'];
+      const list = Object.values(data || {})
+        .filter((b) => [b.creatorPhone, b.joinerPhone].includes(phone) && ['playing', 'pending', 'dispute'].includes(b.status) && !completedStatuses.includes(b.status))
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+      if (!list.length) {
+        runningBattles.innerHTML = '<div class="card muted small">No running battles.</div>';
+        return;
+      }
+
+      runningBattles.innerHTML = list.map((b) => `
+        <div class="card" id="running-${b.id}" data-battle-id="${b.id}">
+          <div class="row space-between">
+            <strong>Battle ₹${b.amount}</strong>
+            <span class="status ${statusClass(b.status)}">${b.status.toUpperCase()}</span>
+          </div>
+          <div class="small muted">Win: ${fmt(b.winAmount)} • Creator: ${b.creatorPhone} • Joiner: ${b.joinerPhone || '-'}</div>
+          ${b.winnerPhone ? `<div class="small" style="margin-top:6px;color:var(--ok);">Winner: ${b.winnerPhone}</div>` : ''}
+          ${battleControls(b)}
+        </div>
+      `).join('');
+    }
+
+    createBattleBtn.addEventListener('click', createBattle);
+
+    rulesBtn.addEventListener('click', () => showModal(rulesModal));
+    overlay.addEventListener('click', () => {
+      document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
+      overlay.classList.remove('show');
+    });
+    document.querySelectorAll('[data-close-modal]').forEach((btn) => {
+      btn.addEventListener('click', () => closeModal(document.getElementById(btn.dataset.closeModal)));
+    });
+
+    submitWinBtn.addEventListener('click', declareWinWithScreenshot);
+
+    document.body.addEventListener('click', async (event) => {
+      const btn = event.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      try {
+        if (action === 'cancel') await cancelOpenBattle(id);
+        if (action === 'join') await joinBattle(id);
+        if (action === 'i-lost') await declareLost(id);
+        if (action === 'i-win') {
+          pendingWinBattleId = id;
+          showModal(winModal);
+        }
+        if (action === 'set-room') {
+          const roomInput = document.getElementById(`room-${id}`);
+          await setRoomCode(id, roomInput?.value || '');
+        }
+      } catch (error) {
+        alert(error.message || 'Action failed.');
+      }
+    });
+
+    function syncWalletRealtime() {
+      onValue(ref(db, `users/${phone}`), (snap) => {
+        const user = snap.val() || {};
+        myUser = {
+          ...myUser,
+          ...user,
+          balance: Number(user.balance || 0),
+          win_balance: Number(user.win_balance || 0)
+        };
+        cashAmount.textContent = fmt(myUser.balance);
+        winAmount.textContent = fmt(myUser.win_balance);
+      });
+    }
+
+    function syncBattlesRealtime() {
+      onValue(ref(db, 'battles'), (snap) => {
+        battlesCache = snap.val() || {};
+        Object.values(battlesCache).forEach((battle) => {
+          if (!battle?.id) return;
+          if (['completed', 'win', 'lost'].includes(battle.status)) {
+            const node = document.getElementById(`running-${battle.id}`);
+            if (node) node.remove();
+          }
+        });
+        renderOpenBattles(battlesCache);
+        renderRunningBattles(battlesCache);
+      });
+    }
+
+    onValue(ref(db, 'app_stats/online_players'), (snap) => {
+      const val = snap.val();
+      document.getElementById('onlinePlayers').textContent = val ? `${val}+` : '500+';
+    });
+
+    await ensureUserRecord();
+    syncWalletRealtime();
+    syncBattlesRealtime();
+  </script>
+</body>
+</html>
