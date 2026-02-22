@@ -304,8 +304,9 @@
     const submitWinBtn = document.getElementById('submitWinBtn');
     const winFile = document.getElementById('winFile');
 
-    let myUser = null;
+    let myUser = { balance: 0, win_balance: 0 };
     let pendingWinBattleId = null;
+    let battlesCache = {};
 
     const fmt = (n = 0) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
     const statusClass = (st = '') => ({ open: 'st-open', playing: 'st-playing', pending: 'st-dispute', dispute: 'st-dispute', completed: 'st-completed' }[st] || '');
@@ -326,16 +327,17 @@
 
     async function deductSmartWallet(userPhone, amount) {
       const userRef = ref(db, `users/${userPhone}`);
+      const required = Number(amount || 0);
       let deduction = null;
       const result = await runTransaction(userRef, (user) => {
         if (!user) return user;
         const winBal = Number(user.win_balance || 0);
         const cashBal = Number(user.balance || 0);
         const total = winBal + cashBal;
-        if (total < amount) return;
+        if (total < required) return;
 
-        const fromWin = Math.min(winBal, amount);
-        const fromCash = amount - fromWin;
+        const fromWin = Math.min(winBal, required);
+        const fromCash = required - fromWin;
         user.win_balance = winBal - fromWin;
         user.balance = cashBal - fromCash;
         deduction = { fromWin, fromCash };
@@ -559,5 +561,4 @@
             <div class="small muted">Win Amount: ${fmt(b.winAmount)} • ID: ${b.id}</div>
             <div class="row" style="margin-top:10px;">
               ${mine
-                ? `<button class="btn-danger btn full" data-action="cancel" data-id="${b.id}" type="button">Cancel (Refund to Cash)</button>`
-    
+                ? `<button class="btn-dange
