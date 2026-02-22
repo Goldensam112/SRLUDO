@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR LUDO | Admin Settlements</title>
+  <style>
+    body{margin:0;font-family:Inter,Arial;background:#060f1d;color:#eaf0ff}
+    .wrap{max-width:760px;margin:0 auto;padding:16px}
+    .card{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;margin-bottom:10px;background:#0d1b33}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .btn{border:0;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer}
+    .ok{background:#1ea65b;color:#fff}.bad{background:#d14e35;color:#fff}
+    .muted{color:#9bb0d7;font-size:12px}
+    a{color:#8ec4ff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Admin Pending Win Claims</h2>
+    <p class="muted">Approve/Reject will run one-time transactional settlement.</p>
+    <div id="list"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, onValue, runTransaction, update, increment } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
+      authDomain: 'sr-ludo-4440b.firebaseapp.com',
+      databaseURL: 'https://sr-ludo-4440b-default-rtdb.firebaseio.com',
+      projectId: 'sr-ludo-4440b',
+      storageBucket: 'sr-ludo-4440b.firebasestorage.app',
+      messagingSenderId: '1080387235822',
+      appId: '1:1080387235822:web:77faea231641837950e8ff'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const list = document.getElementById('list');
+
+    const fmt = (n=0)=>`₹${Number(n||0).toLocaleString('en-IN')}`;
+
+    function render(battles={}) {
+      const rows = Object.values(battles)
+        .filter((b)=>b && b.status==='pending' && (b.result_status||'')==='pending')
+        .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+
+      if (!rows.length) {
+        list.innerHTML = '<div class="card muted">No pending claims.</div>';
+        return;
+      }
+
+      list.innerHTML = rows.map((b)=>`<div class="card" id="card-${b.id}">
+        <div class="row"><strong>Battle ${b.id}</strong><span>${fmt(b.winAmount)} prize</span></div>
+        <div class="muted">Claim by: ${b.win_claim_by || '-'} | Opponent: ${[b.creatorPhone,b.joinerPhone].filter(Boolean).find((p)=>p!==b.win_claim_by)||'-'}</div>
+        <div class="muted" style="margin-top:6px;">Screenshot: ${b.screenshot_url ? `<a href="${b.screenshot_url}" target="_blank">Open</a>` : 'N/A'}</div>
+        <div class="row" style="margin-top:10px;justify-content:flex-start;">
+          <button class="btn ok" data-act="approve" data-id="${b.id}">Approve</button>
+          <button class="btn bad" data-act="reject" data-id="${b.id}">Reject</button>
+        </div>
+      </div>`).join('');
+    }
+
+    async function settleBattle(battleId, decision, btn) {
+      const battleRef = ref(db, `battles/${battleId}`);
+      btn.disabled = true;
+      const prev = btn.textContent;
+      btn.textContent = 'Processing...';
+
+      try {
+        const lockTx = await runTransaction(battleRef, (battle) => {
+          if (!battle) return battle;
+          if (battle.status !== 'pending') return;
+          if ((battle.result_status || '') !== 'pending') return;
+          if (battle.settlement_processed || battle.settlement_processing) return;
+          battle.settlement_processing = true;
+          battle.settlement_processing_at = Date.now();
+          return battle;
+        });
+
+        if (!lockTx.committed) {
+          throw new Error('Already processed or invalid status.');
+        }
+
+        const battle = lockTx.snapshot.val() || {};
+        const claimBy = battle.win_claim_by || battle.winnerPhone;
+        const opposite = [battle.creatorPhone, battle.joinerPhone].filter(Boolean).find((p)=>p!==claimBy);
+        if (!claimBy || !opposite) throw new Error('Participant mapping failed.');
+
+        const approved = decision === 'approved';
+        const winnerPhone = approved ? claimBy : opposite;
+        const loserPhone = approved ? opposite : claimBy;
+        const now = Date.now();
+        const winAmt = Number(battle.winAmount || 0);
+
+        const updates = {};
+        updates[`users/${winnerPhone}/win_balance`] = increment(winAmt);
+        if (!approved) {
+          updates[`users/${claimBy}/balance`] = increment(-50);
+        }
+
+        updates[`battles/${battleId}/winnerPhone`] = winnerPhone;
+        updates[`battles/${battleId}/loserPhone`] = loserPhone;
+        updates[`battles/${battleId}/status`] = 'completed';
+        updates[`battles/${battleId}/result_status`] = approved ? 'approved' : 'rejected';
+        updates[`battles/${battleId}/resultType`] = approved ? 'win-approved-by-admin' : 'win-claim-rejected-by-admin';
+        updates[`battles/${battleId}/penalty_applied`] = approved ? 0 : 50;
+        updates[`battles/${battleId}/settlement_processed`] = true;
+        updates[`battles/${battleId}/settlement_processing`] = false;
+        updates[`battles/${battleId}/settledAt`] = now;
+        updates[`battles/${battleId}/updatedAt`] = now;
+
+        const creatorStatus = battle.creatorPhone === winnerPhone ? 'win' : (!approved && battle.creatorPhone===claimBy ? 'lost_fake_claim' : 'lost');
+        const joinerStatus = battle.joinerPhone === winnerPhone ? 'win' : (!approved && battle.joinerPhone===claimBy ? 'lost_fake_claim' : 'lost');
+        updates[`match_history/${battle.creatorPhone}/${battleId}`] = {
+          battle_id: battleId, entry_fee: Number(battle.amount||0), prize: winAmt, status: creatorStatus,
+          timestamp: now, time: now, creatorPhone: battle.creatorPhone || '', joinerPhone: battle.joinerPhone || ''
+        };
+        updates[`match_history/${battle.joinerPhone}/${battleId}`] = {
+          battle_id: battleId, entry_fee: Number(battle.amount||0), prize: winAmt, status: joinerStatus,
+          timestamp: now, time: now, creatorPhone: battle.creatorPhone || '', joinerPhone: battle.joinerPhone || ''
+        };
+
+        await update(ref(db), updates);
+      } catch (e) {
+        await update(battleRef, { settlement_processing: false, settlement_error: e.message || 'settlement failed', updatedAt: Date.now() });
+        alert(e.message || 'Settlement failed');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prev;
+      }
+    }
+
+    document.body.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      const id = btn.dataset.id;
+      await settleBattle(id, act === 'approve' ? 'approved' : 'rejected', btn);
+    });
+
+    onValue(ref(db, 'battles'), (snap)=> render(snap.val() || {}));
+  </script>
+</body>
+</html>
