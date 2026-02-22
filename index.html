@@ -27,7 +27,6 @@
       --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     }
 
-    /* 1. Hide body initially to prevent flash */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -37,11 +36,7 @@
       visibility: hidden; 
       opacity: 0;
     }
-    body.ready {
-      visibility: visible;
-      opacity: 1;
-      transition: opacity 0.2s ease-in;
-    }
+    body.ready { visibility: visible; opacity: 1; transition: opacity 0.2s ease-in; }
 
     * { box-sizing: border-box; }
     .hidden { display: none !important; }
@@ -54,7 +49,6 @@
       padding-bottom: 90px;
     }
 
-    /* --- SIDEBAR & OVERLAY --- */
     .sidebar {
       position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d;
       border-right: 1px solid var(--line); z-index: 150; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px;
@@ -67,14 +61,10 @@
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 140; display: none; }
     .overlay.show { display: block; }
 
-    /* --- LOGIN SCREEN --- */
     .login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #0f172a; }
-    .login-card {
-      width: 100%; background: white; border-radius: 24px; padding: 28px 20px; text-align: center;
-    }
+    .login-card { width: 100%; background: white; border-radius: 24px; padding: 28px 20px; text-align: center; }
     .main-logo { height: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--accent)); }
 
-    /* --- HEADER --- */
     .sticky-header {
       position: sticky; top: 0; z-index: 100; background: #1e293b;
       padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
@@ -161,7 +151,7 @@
       </header>
 
       <div class="announcement">
-        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
+        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
       </div>
 
       <div class="game-grid">
@@ -177,6 +167,12 @@
           </div>
           <div class="game-label">Support</div>
         </div>
+      </div>
+
+      <div style="padding:15px; background:white; margin:15px; border-radius:12px; border:1px solid #e2e8f0; color:var(--text-dark);">
+        <strong>Refer & Earn</strong>
+        <p style="font-size:12px; margin:5px 0;">Share your phone number as referral code:</p>
+        <div id="myReferralLink" style="background:#f8fafc; padding:10px; border-radius:8px; font-size:13px; font-weight:700; border:1px dashed var(--accent);">Loading...</div>
       </div>
 
       <div style="padding:15px;">
@@ -236,13 +232,14 @@
     const historyModal = document.getElementById('historyModal');
     const historyList = document.getElementById('historyList');
 
+    let currentPhone = localStorage.getItem('sr_ludo_phone');
+
     const toggleSidebar = (show) => {
       sidebar.classList.toggle('open', show);
       overlay.classList.toggle('show', show);
     };
 
     const showHistory = async (type) => {
-      const currentPhone = localStorage.getItem('sr_ludo_phone');
       if (!currentPhone) return;
       document.getElementById('modalTitle').textContent = type.replace('_', ' ').toUpperCase();
       historyList.innerHTML = '<p style="color:gray;">Loading...</p>';
@@ -256,25 +253,56 @@
       ).join('');
     };
 
-    const initUser = async (phone) => {
+    const createUserIfMissing = async (phone) => {
       const userRef = ref(db, `users/${phone}`);
-      const snap = await get(userRef);
-      if (!snap.exists()) {
-        await set(userRef, { phone, balance: 0, win_balance: 0, kyc_status: 'pending', time: Date.now() });
+      const userSnap = await get(userRef);
+      // Get referral code from localStorage (saved during button click)
+      const referralCode = localStorage.getItem('sr_ludo_pending_referral');
+
+      if (!userSnap.exists()) {
+        const lastDigits = phone.slice(-4);
+        let referrerPhone = null;
+
+        // Check if a referral code was entered
+        if (referralCode && referralCode !== phone) {
+           const refSnap = await get(ref(db, `users/${referralCode}`));
+           if(refSnap.exists()) {
+              referrerPhone = referralCode;
+           }
+        }
+
+        await set(userRef, { 
+          phone, 
+          balance: 0, 
+          win_balance: 0, 
+          kyc_status: 'pending', 
+          referredBy: referrerPhone || null,
+          time: Date.now() 
+        });
+
+        // If referred, save to referral node for the admin/referrer
+        if (referrerPhone) {
+          await set(ref(db, `referrals/${referrerPhone}/${phone}`), {
+            phone: phone,
+            joinedAt: Date.now()
+          });
+        }
+        localStorage.removeItem('sr_ludo_pending_referral');
       }
+
       onValue(userRef, (s) => {
         const u = s.val() || {};
         cashAmount.textContent = `₹${u.balance || 0}`;
         winAmount.textContent = `₹${u.win_balance || 0}`;
+        document.getElementById('myReferralLink').textContent = phone;
       });
     };
 
     const checkAuthAndShow = () => {
-      const currentPhone = localStorage.getItem('sr_ludo_phone');
       if (currentPhone) {
         loginScreen.classList.add('hidden');
         dashboard.classList.remove('hidden');
-        initUser(currentPhone);
+        createUserIfMissing(currentPhone);
       } else {
         loginScreen.classList.remove('hidden');
         dashboard.classList.add('hidden');
@@ -282,7 +310,17 @@
       setTimeout(() => { document.body.classList.add('ready'); }, 50);
     };
 
-    // --- UPDATED LISTENER FOR AUTO +91 FORMAT ---
+    document.getElementById('loginBtn').onclick = () => {
+      // 1. Capture referral code BEFORE login starts
+      const typedReferral = document.getElementById('referralCode')?.value.trim();
+      if (typedReferral) {
+        localStorage.setItem('sr_ludo_pending_referral', typedReferral);
+      }
+      // Click hidden PE button
+      const peBtn = document.querySelector('.pe_signin_button button, .pe_signin_button a');
+      if (peBtn) peBtn.click();
+    };
+
     window.phoneEmailListener = async (userObj) => {
       try {
         let verifiedPhone = "";
@@ -295,28 +333,12 @@
         }
 
         if (verifiedPhone) {
-          // Keep only digits
           let digits = verifiedPhone.toString().replace(/\D/g, '');
-          
-          let finalPhone = "";
-          if (digits.length === 10) {
-            finalPhone = "+91" + digits; // Add +91 to 10-digit numbers
-          } else if (digits.length > 10 && digits.startsWith('91')) {
-            finalPhone = "+" + digits; // Add + if 91 is already there
-          } else {
-            finalPhone = digits.startsWith('+') ? digits : "+" + digits;
-          }
-
+          let finalPhone = (digits.length === 10) ? "+91" + digits : "+" + digits;
           localStorage.setItem('sr_ludo_phone', finalPhone);
-          
-          loginScreen.classList.add('hidden');
-          dashboard.classList.remove('hidden');
-          document.body.classList.add('ready');
-          
           location.reload(); 
         }
       } catch (error) {
-        console.error("Login Error:", error);
         document.body.classList.add('ready');
       }
     };
