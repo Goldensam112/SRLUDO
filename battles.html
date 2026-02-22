@@ -600,12 +600,11 @@
               <strong>₹${b.amount}</strong>
               <span class="status ${statusClass(b.status)}">${b.status.toUpperCase()}</span>
             </div>
-            <div class="small muted">Win Amount: ${fmt(b.winAmount)} • ID: ${b.id}</div>
-            <div class="row" style="margin-top:10px;">
+<div class="win-highlight">Win: ${fmt(b.winAmount)}</div>
+<div class="small muted">ID: ${b.id}</div>            <div class="row" style="margin-top:10px;">
               ${mine
                 ? `<button class="btn-danger btn full" data-action="cancel" data-id="${b.id}" type="button">Cancel (Refund)</button>`
-                : `<button class="btn btn-gold full" data-action="join" data-id="${b.id}" type="button">Join Battle</button>`}
-            </div>
+: `<button class="btn btn-gold full" style="font-size: 16px; padding: 14px;" data-action="join" data-id="${b.id}" type="button">JOIN NOW</button>`}            </div>
           </div>
         `;
       }).join('');
