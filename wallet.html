@@ -276,7 +276,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'YOUR_IMGBB_API_KEY';
+    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'ca44783bda6779b5e3913432bd243b30';
 
     let currentPhone = (localStorage.getItem('sr_ludo_phone') || '').trim();
     const phone = currentPhone;
@@ -363,12 +363,12 @@
 
 
     const uploadDepositScreenshot = async (file) => {
-      if (!IMGBB_API_KEY || IMGBB_API_KEY === 'YOUR_IMGBB_API_KEY') {
+      if (!IMGBB_API_KEY || IMGBB_API_KEY === 'ca44783bda6779b5e3913432bd243b30') {
         throw new Error('ImgBB API key missing. Please set sr_ludo_imgbb_api_key.');
       }
       const fd = new FormData();
       fd.append('image', file);
-      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${ca44783bda6779b5e3913432bd243b30}`, { method: 'POST', body: fd });
       const json = await resp.json();
       const url = json?.data?.url;
       if (!resp.ok || !url) throw new Error('Screenshot upload failed.');
