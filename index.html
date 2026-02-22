@@ -15,7 +15,6 @@
     :root {
       --bg: #040913;
       --card: #ffffff;
-      --card-dark: #0d1b33;
       --text: #e8efff;
       --text-dark: #1e293b;
       --muted: #9fb0d1;
@@ -27,14 +26,14 @@
       --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     }
 
-    /* 1. Hide body initially to prevent flash */
+    /* Fix: Prevent Flash of Login Screen */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
       background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
       color: var(--text);
       min-height: 100vh;
-      visibility: hidden;
+      visibility: hidden; /* Start Hidden */
       opacity: 0;
     }
     body.ready {
@@ -54,7 +53,7 @@
       padding-bottom: 90px;
     }
 
-    /* --- SIDEBAR & OVERLAY --- */
+    /* Sidebar & Overlay */
     .sidebar {
       position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d;
       border-right: 1px solid var(--line); z-index: 150; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px;
@@ -67,14 +66,12 @@
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 140; display: none; }
     .overlay.show { display: block; }
 
-    /* --- LOGIN SCREEN --- */
+    /* Login Screen */
     .login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #0f172a; }
-    .login-card {
-      width: 100%; background: white; border-radius: 24px; padding: 28px 20px; text-align: center;
-    }
+    .login-card { width: 100%; background: white; border-radius: 24px; padding: 28px 20px; text-align: center; }
     .main-logo { height: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--accent)); }
 
-    /* --- HEADER --- */
+    /* Header & Premium Wallets */
     .sticky-header {
       position: sticky; top: 0; z-index: 100; background: #1e293b;
       padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
@@ -82,7 +79,6 @@
     .header-left { display: flex; align-items: center; gap: 12px; }
     .hamburger { border: none; background: none; color: white; font-size: 24px; cursor: pointer; }
     .nav-logo { height: 35px; }
-    
     .wallets { display: flex; gap: 8px; }
     .pill {
       min-width: 100px; border-radius: 999px; padding: 7px 11px; font-size: 11px; text-align: center;
@@ -92,12 +88,12 @@
     .cash-pill { background: linear-gradient(130deg, #0f49b3, #2a89ff); }
     .win-pill { background: linear-gradient(130deg, var(--gold-1), var(--gold-2)); color: #1f1711; }
 
+    /* Game UI */
     .announcement {
       background: linear-gradient(90deg, #0f172a, #1e293b);
       margin: 15px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--gold-2);
       color: white; text-align: center; font-size: 13px; font-weight: 500;
     }
-
     .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
     .game-card {
       background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow);
@@ -107,13 +103,13 @@
     .game-card .img-wrap { width: 100%; height: 75%; overflow: hidden; }
     .game-card img { width: 100%; height: 100%; object-fit: cover; }
     .game-label { height: 25%; width: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-dark); }
-    
     .live-tag {
       position: absolute; top: 8px; right: 8px; background: white; color: var(--danger);
       font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 50px; display: flex; align-items: center; gap: 4px;
     }
     .dot { width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: blink 1s infinite; }
 
+    /* Modal */
     .modal {
       position: fixed; left: 50%; top: 50%; width: min(92%, 460px); transform: translate(-50%, -50%);
       background: #0a1a32; border: 1px solid var(--line); border-radius: 14px; z-index: 200; padding: 16px;
@@ -143,9 +139,7 @@
         <input id="referralCode" type="text" placeholder="Referral Code (Optional)" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px;">
         <button id="loginBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer;">Continue with Phone</button>
         <div class="signin-wrap" style="margin-top: 15px;">
-          <div class="pe_signin_button" data-client-id="17286597723145724436" data-redirect-url="https://https://goldensam112.github.io/SRLUDO/index.html" 
-     data-theme="dark">
-</div> data-theme="dark"></div>
+          <div class="pe_signin_button" data-client-id="17286597723145724436" data-theme="dark"></div>
         </div>
       </div>
     </section>
@@ -167,7 +161,7 @@
       </div>
 
       <div class="game-grid">
-        <div class="game-card" id="classicCard">
+        <div class="game-card" id="classicCard" onclick="window.location.href='battles.html'">
           <div class="live-tag"><div class="dot"></div> LIVE</div>
           <div class="img-wrap"><img src="classic.png" alt="Ludo Classic"></div>
           <div class="game-label">Classic Ludo</div>
@@ -214,7 +208,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getDatabase, ref, get, set, update, onValue, query, limitToLast } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+    import { getDatabase, ref, get, set, onValue, query, limitToLast } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
@@ -251,11 +245,9 @@
       historyList.innerHTML = '<p style="color:gray;">Loading...</p>';
       historyModal.classList.add('show');
       overlay.classList.add('show');
-      
       const snap = await get(query(ref(db, `${type}/${currentPhone}`), limitToLast(15)));
       const list = snap.val();
       if (!list) { historyList.innerHTML = '<p style="color:gray;">No records found.</p>'; return; }
-      
       historyList.innerHTML = Object.entries(list).reverse().map(([id, item]) => 
         `<div class="record">ID: #${id.slice(-6)}<br>Amount: ₹${item.amount || item.entry_fee || 0}<br>Status: ${item.status || 'Success'}</div>`
       ).join('');
@@ -272,10 +264,9 @@
         cashAmount.textContent = `₹${u.balance || 0}`;
         winAmount.textContent = `₹${u.win_balance || 0}`;
       });
-      loginScreen.classList.add('hidden');
-      dashboard.classList.remove('hidden');
     };
 
+    // Fix: Login Flash & Logout Handling
     const checkAuthAndShow = () => {
       if (currentPhone) {
         loginScreen.classList.add('hidden');
@@ -285,17 +276,12 @@
         loginScreen.classList.remove('hidden');
         dashboard.classList.add('hidden');
       }
-      
-      // Fixed: Reveal the body always, with a tiny delay to ensure classes are applied
-      setTimeout(() => {
-        document.body.classList.add('ready');
-      }, 50);
+      setTimeout(() => { document.body.classList.add('ready'); }, 50);
     };
 
     document.getElementById('menuBtn').onclick = () => toggleSidebar(true);
     overlay.onclick = () => { toggleSidebar(false); historyModal.classList.remove('show'); overlay.classList.remove('show'); };
     document.getElementById('closeModalBtn').onclick = () => { historyModal.classList.remove('show'); overlay.classList.remove('show'); };
-    document.getElementById('classicCard').onclick = () => window.location.href = 'battles.html';
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
     
     document.querySelectorAll('.history-link').forEach(link => {
