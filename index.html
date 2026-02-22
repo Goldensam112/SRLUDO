@@ -27,7 +27,7 @@
       --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     }
 
-    /* 1. NEW: Hide body initially to prevent login flash */
+    /* 1. Hide body initially to prevent flash */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -238,7 +238,6 @@
 
     let currentPhone = localStorage.getItem('sr_ludo_phone');
 
-    // Sidebar & Modal Functions
     const toggleSidebar = (show) => {
       sidebar.classList.toggle('open', show);
       overlay.classList.toggle('show', show);
@@ -271,35 +270,26 @@
         cashAmount.textContent = `₹${u.balance || 0}`;
         winAmount.textContent = `₹${u.win_balance || 0}`;
       });
-      // Section is already switched by tryAutoLogin, but ensuring here too.
       loginScreen.classList.add('hidden');
       dashboard.classList.remove('hidden');
     };
 
-    // 2. MODIFIED: Instant Auth Check to prevent login flash
-   // 2. MODIFIED: Instant Auth Check (Fixed for Logout)
-const checkAuthAndShow = () => {
-  if (currentPhone) {
-    // अगर लॉगिन है तो डैशबोर्ड दिखाओ
-    loginScreen.classList.add('hidden');
-    dashboard.classList.remove('hidden');
-    initUser(currentPhone);
-  } else {
-    // अगर लॉगिन नहीं है (या लॉगआउट किया है) तो लॉगिन स्क्रीन दिखाओ
-    loginScreen.classList.remove('hidden');
-    dashboard.classList.add('hidden');
-  }
-  
-  // सबसे ज़रूरी: दोनों ही केस में बॉडी को 'Ready' करना है ताकि पेज दिखे
-  setTimeout(() => {
-    document.body.classList.add('ready');
-  }, 50); 
-};
-      // Reveal the body only after switching the correct section
-      document.body.classList.add('ready');
+    const checkAuthAndShow = () => {
+      if (currentPhone) {
+        loginScreen.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        initUser(currentPhone);
+      } else {
+        loginScreen.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+      }
+      
+      // Fixed: Reveal the body always, with a tiny delay to ensure classes are applied
+      setTimeout(() => {
+        document.body.classList.add('ready');
+      }, 50);
     };
 
-    // Event Listeners
     document.getElementById('menuBtn').onclick = () => toggleSidebar(true);
     overlay.onclick = () => { toggleSidebar(false); historyModal.classList.remove('show'); overlay.classList.remove('show'); };
     document.getElementById('closeModalBtn').onclick = () => { historyModal.classList.remove('show'); overlay.classList.remove('show'); };
@@ -317,7 +307,6 @@ const checkAuthAndShow = () => {
       }
     };
 
-    // Run the check
     checkAuthAndShow();
   </script>
 </body>
