@@ -269,7 +269,6 @@
       });
     };
 
-    // --- SMART LOGIC: SWITCH VIEWS INSTANTLY ---
     const checkAuthAndShow = () => {
       const currentPhone = localStorage.getItem('sr_ludo_phone');
       if (currentPhone) {
@@ -280,11 +279,10 @@
         loginScreen.classList.remove('hidden');
         dashboard.classList.add('hidden');
       }
-      // Reveal UI
       setTimeout(() => { document.body.classList.add('ready'); }, 50);
     };
 
-    // --- SMART LISTENER: HANDLE BOTH OBJECT & URL RESPONSES ---
+    // --- UPDATED LISTENER FOR AUTO +91 FORMAT ---
     window.phoneEmailListener = async (userObj) => {
       try {
         let verifiedPhone = "";
@@ -297,15 +295,24 @@
         }
 
         if (verifiedPhone) {
-          const cleanPhone = verifiedPhone.startsWith('+') ? verifiedPhone : `+${verifiedPhone}`;
-          localStorage.setItem('sr_ludo_phone', cleanPhone);
+          // Keep only digits
+          let digits = verifiedPhone.toString().replace(/\D/g, '');
           
-          // Switch view instantly
+          let finalPhone = "";
+          if (digits.length === 10) {
+            finalPhone = "+91" + digits; // Add +91 to 10-digit numbers
+          } else if (digits.length > 10 && digits.startsWith('91')) {
+            finalPhone = "+" + digits; // Add + if 91 is already there
+          } else {
+            finalPhone = digits.startsWith('+') ? digits : "+" + digits;
+          }
+
+          localStorage.setItem('sr_ludo_phone', finalPhone);
+          
           loginScreen.classList.add('hidden');
           dashboard.classList.remove('hidden');
           document.body.classList.add('ready');
           
-          // Refresh to sync Firebase data
           location.reload(); 
         }
       } catch (error) {
@@ -323,7 +330,6 @@
       link.onclick = (e) => { e.preventDefault(); showHistory(link.dataset.type); toggleSidebar(false); };
     });
 
-    // Execute check
     checkAuthAndShow();
   </script>
 </body>
