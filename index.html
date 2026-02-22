@@ -255,24 +255,35 @@
     };
 
     // --- REFFERAL LOGIC ENGINE ---
-    const processReferral = async (newUserPhone, refCode) => {
-      if (!refCode || refCode === newUserPhone) return;
-      
-      // Normalize Ref Code to +91
-      let digits = refCode.replace(/\D/g, '');
-      let referrerPhone = (digits.length === 10) ? "+91" + digits : "+" + digits;
+  const processReferral = async (newUserPhone, typedCode) => {
+  // 1. Agar code khali hai ya apna hi number hai toh ruk jao
+  if (!typedCode || typedCode === newUserPhone) return;
 
-      const refSnap = await get(ref(db, `users/${referrerPhone}`));
-      if(refSnap.exists()) {
-          // Link in new user profile
-          await update(ref(db, `users/${newUserPhone}`), { referredBy: referrerPhone });
-          // Link in referrer's list
-          await set(ref(db, `referrals/${referrerPhone}/${newUserPhone}`), {
-            phone: newUserPhone,
-            joinedAt: Date.now()
-          });
-      }
-    };
+  try {
+    // 2. referral_codes wali node mein check karo ye code kiska hai
+    const codeSnap = await get(ref(db, `referral_codes/${typedCode}`));
+    
+    if (codeSnap.exists()) {
+      const referrerPhone = codeSnap.val().phone; // Refer karne wale ka number mil gaya
+
+      // 3. Naye user ki profile mein referrer ka number save karo
+      await update(ref(db, `users/${newUserPhone}`), { 
+        referredBy: referrerPhone,
+        appliedCode: typedCode
+      });
+
+      // 4. Referrer ke account mein record banao ki usne kisko join karwaya
+      await set(ref(db, `referrals/${referrerPhone}/${newUserPhone}`), {
+        phone: newUserPhone,
+        joinedAt: Date.now()
+      });
+      
+      console.log("Referral Successful!");
+    }
+  } catch (error) {
+    console.error("Referral Error:", error);
+  }
+};
 
     const createUserIfMissing = async (phone) => {
       const userRef = ref(db, `users/${phone}`);
@@ -315,8 +326,7 @@
     };
 
     document.getElementById('loginBtn').onclick = () => {
-      const typedReferral = document.getElementById('referralCode')?.value.trim();
-      if (typedReferral) {
+const typedReferral = document.getElementById('referralCode')?.value.toString().trim();      if (typedReferral) {
         localStorage.setItem('sr_ludo_pending_referral', typedReferral);
       }
       const peBtn = document.querySelector('.pe_signin_button button, .pe_signin_button a');
