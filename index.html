@@ -277,17 +277,24 @@
     };
 
     // 2. MODIFIED: Instant Auth Check to prevent login flash
-    const checkAuthAndShow = () => {
-      if (currentPhone) {
-        // Show dashboard immediately if token exists
-        loginScreen.classList.add('hidden');
-        dashboard.classList.remove('hidden');
-        initUser(currentPhone);
-      } else {
-        // Show login screen
-        loginScreen.classList.remove('hidden');
-        dashboard.classList.add('hidden');
-      }
+   // 2. MODIFIED: Instant Auth Check (Fixed for Logout)
+const checkAuthAndShow = () => {
+  if (currentPhone) {
+    // अगर लॉगिन है तो डैशबोर्ड दिखाओ
+    loginScreen.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    initUser(currentPhone);
+  } else {
+    // अगर लॉगिन नहीं है (या लॉगआउट किया है) तो लॉगिन स्क्रीन दिखाओ
+    loginScreen.classList.remove('hidden');
+    dashboard.classList.add('hidden');
+  }
+  
+  // सबसे ज़रूरी: दोनों ही केस में बॉडी को 'Ready' करना है ताकि पेज दिखे
+  setTimeout(() => {
+    document.body.classList.add('ready');
+  }, 50); 
+};
       // Reveal the body only after switching the correct section
       document.body.classList.add('ready');
     };
