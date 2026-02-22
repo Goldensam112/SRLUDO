@@ -425,8 +425,7 @@
       try {
         currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
         if (!currentPhone) throw new Error('Login required. Please login again.');
-        const reqRef = push(ref(db, `deposit_requests/${currentPhone}`));
-        const screenshotUrl = await uploadDepositScreenshot(screenshotFile);
+const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = await uploadDepositScreenshot(screenshotFile);
         await set(reqRef, {
           id: reqRef.key,
           phone: currentPhone,
