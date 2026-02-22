@@ -151,7 +151,7 @@
       </header>
 
       <div class="announcement">
-        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
+        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
       </div>
 
       <div class="game-grid">
@@ -222,6 +222,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const IMGBB_API_KEY = "ca44783bda6779b5e3913432bd243b30";
 
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('dashboard');
@@ -253,41 +254,44 @@
       ).join('');
     };
 
+    // --- REFFERAL LOGIC ENGINE ---
+    const processReferral = async (newUserPhone, refCode) => {
+      if (!refCode || refCode === newUserPhone) return;
+      
+      // Normalize Ref Code to +91
+      let digits = refCode.replace(/\D/g, '');
+      let referrerPhone = (digits.length === 10) ? "+91" + digits : "+" + digits;
+
+      const refSnap = await get(ref(db, `users/${referrerPhone}`));
+      if(refSnap.exists()) {
+          // Link in new user profile
+          await update(ref(db, `users/${newUserPhone}`), { referredBy: referrerPhone });
+          // Link in referrer's list
+          await set(ref(db, `referrals/${referrerPhone}/${newUserPhone}`), {
+            phone: newUserPhone,
+            joinedAt: Date.now()
+          });
+      }
+    };
+
     const createUserIfMissing = async (phone) => {
       const userRef = ref(db, `users/${phone}`);
       const userSnap = await get(userRef);
-      // Get referral code from localStorage (saved during button click)
-      const referralCode = localStorage.getItem('sr_ludo_pending_referral');
+      const pendingRef = localStorage.getItem('sr_ludo_pending_referral');
 
       if (!userSnap.exists()) {
-        const lastDigits = phone.slice(-4);
-        let referrerPhone = null;
-
-        // Check if a referral code was entered
-        if (referralCode && referralCode !== phone) {
-           const refSnap = await get(ref(db, `users/${referralCode}`));
-           if(refSnap.exists()) {
-              referrerPhone = referralCode;
-           }
-        }
-
         await set(userRef, { 
           phone, 
           balance: 0, 
           win_balance: 0, 
           kyc_status: 'pending', 
-          referredBy: referrerPhone || null,
           time: Date.now() 
         });
 
-        // If referred, save to referral node for the admin/referrer
-        if (referrerPhone) {
-          await set(ref(db, `referrals/${referrerPhone}/${phone}`), {
-            phone: phone,
-            joinedAt: Date.now()
-          });
+        if (pendingRef) {
+          await processReferral(phone, pendingRef);
+          localStorage.removeItem('sr_ludo_pending_referral');
         }
-        localStorage.removeItem('sr_ludo_pending_referral');
       }
 
       onValue(userRef, (s) => {
@@ -311,12 +315,10 @@
     };
 
     document.getElementById('loginBtn').onclick = () => {
-      // 1. Capture referral code BEFORE login starts
       const typedReferral = document.getElementById('referralCode')?.value.trim();
       if (typedReferral) {
         localStorage.setItem('sr_ludo_pending_referral', typedReferral);
       }
-      // Click hidden PE button
       const peBtn = document.querySelector('.pe_signin_button button, .pe_signin_button a');
       if (peBtn) peBtn.click();
     };
