@@ -524,12 +524,25 @@
       renderWithdrawMethodInfo();
     });
 
-    onValue(ref(db, `referrals/${phone}`), (snap) => {
-      const referralData = snap.val() || {};
-      const friends = referralData.friends_list || {};
-      totalRefers.textContent = String(Object.keys(friends).length);
-      totalEarned.textContent = fmt(referralData.earnings_total || 0);
-    });
+  onValue(ref(db, `referrals/${phone}`), (snap) => {
+  const friendsList = snap.val() || {};
+  // Total kitne logo ko refer kiya uska count
+  const count = Object.keys(friendsList).length;
+  totalRefers.textContent = count;
+});
+
+// Total kitna kamaya wo user profile se uthayenge
+onValue(ref(db, `users/${phone}`), (snap) => {
+  const u = snap.val() || {};
+  userData = u; // Global variable update
+  cashBal.textContent = fmt(u.balance);
+  winBal.textContent = fmt(u.win_balance);
+  
+  // Referral Wallet aur Total Earnings dikhayein
+  referralWallet.textContent = fmt(u.referral_balance || 0);
+  totalEarned.textContent = fmt(u.referral_earnings_total || 0); 
+  renderWithdrawMethodInfo();
+});
 
     await ensureUser();
     await loadHistory();
