@@ -487,29 +487,85 @@ const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = a
       }
     };
 
-    const submitWithdraw = async () => {
-      const amount = Number(document.getElementById('withdrawAmount').value);
-      const method = currentMethod;
+ const submitWithdraw = async () => {
+  const amount = Number(document.getElementById('withdrawAmount').value);
+  const method = currentMethod;
 
-      if (!userData || userData.kyc_status !== 'verified') {
-        alert('Please complete KYC first!');
-        window.location.href = 'profile.html';
-        return;
+  // 1. KYC Check
+  if (!userData || userData.kyc_status !== 'verified') {
+    alert('Please complete KYC first!');
+    window.location.href = 'profile.html';
+    return;
+  }
+
+  // 2. Payment Details Check (Jo aapne pucha tha)
+  if (!hasPaymentDetails(method)) {
+    alert('Please save your selected payment method details in profile first.');
+    window.location.href = 'profile.html';
+    return;
+  }
+
+  // 3. Amount Validation
+  if (!amount || amount < 100) return alert('Minimum withdrawal is ₹100.');
+
+  submitWithdrawBtn.disabled = true;
+  submitWithdrawBtn.textContent = 'Processing...';
+
+  try {
+    currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+    if (!currentPhone) throw new Error('Login required. Please login again.');
+    
+    // 4. TRANSACTION: Pehle balance check aur cut karo
+    const userRef = ref(db, `users/${currentPhone}`);
+    const tx = await runTransaction(userRef, (user) => {
+      if (!user) return user;
+      const currentWinBal = Number(user.win_balance || 0);
+      
+      if (currentWinBal < amount) {
+        return; // Balance kam hai toh transaction cancel
       }
+      
+      // Balance minus ho raha hai
+      user.win_balance = currentWinBal - amount;
+      return user;
+    });
 
-      if (!hasPaymentDetails(method)) {
-        alert('Please save your selected payment method details in profile first.');
-        window.location.href = 'profile.html';
-        return;
-      }
+    if (!tx.committed) {
+      throw new Error('Insufficient winnings balance.');
+    }
 
-      if (!amount || amount < 100) return alert('Minimum withdrawal is ₹100.');
-      if (Number(userData.win_balance || 0) < amount) return alert('Insufficient winnings balance.');
+    // 5. Database Entry: Request bano
+    const reqRef = push(ref(db, 'withdraw_requests'));
+    await set(reqRef, {
+      id: reqRef.key,
+      phone: currentPhone,
+      amount,
+      status: 'pending',
+      method: currentMethod,
+      timestamp: Date.now(),
+      details: currentMethod === 'UPI'
+        ? { upi_id: (userData?.upi_id || '').trim() }
+        : {
+            acc_no: (userData?.bank_acc || '').trim(),
+            ifsc: (userData?.bank_ifsc || '').trim(),
+            holder: (userData?.full_name || '').trim()
+          },
+      from_wallet: 'win_balance',
+      time: Date.now()
+    });
 
-      submitWithdrawBtn.disabled = true;
-      try {
-        currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
-        if (!currentPhone) throw new Error('Login required. Please login again.');
+    alert(`Success! ₹${amount} Winning Balance se cut gaye hain.`);
+    closeModal(withdrawModal);
+    document.getElementById('withdrawAmount').value = '';
+    if (activeTab === 'withdraw') loadHistory();
+
+  } catch (error) {
+    alert(error.message || 'Withdraw request failed.');
+  } finally {
+    submitWithdrawBtn.disabled = false;
+    submitWithdrawBtn.textContent = 'Submit Request';
+  }
+};
 // Path ko simple rakhein taaki filter kaam kare
 const reqRef = push(ref(db, 'withdraw_requests'));        await set(reqRef, {
           id: reqRef.key,
