@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR LUDO | My Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #040913;
+      --card: #0d1b33;
+      --card-2: #102340;
+      --text: #e8efff;
+      --muted: #9fb0d1;
+      --line: rgba(255,255,255,.08);
+      --gold-1: #a86b00;
+      --gold-2: #ffd05a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
+    }
+    .app {
+      max-width: 540px;
+      margin: 0 auto;
+      min-height: 100vh;
+      border-left: 1px solid rgba(255,255,255,.05);
+      border-right: 1px solid rgba(255,255,255,.05);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+      padding-bottom: 24px;
+    }
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      background: rgba(4,9,19,.88);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+    }
+    .icon-btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      border-radius: 10px;
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .title { font-weight: 800; letter-spacing: .8px; }
+    .content { padding: 14px; }
+
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .wallet-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 13px;
+      min-height: 110px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+    }
+    .cash { background: linear-gradient(130deg, #0f49b3, #2a89ff); }
+    .win { background: linear-gradient(130deg, var(--gold-1), var(--gold-2)); color: #21180f; }
+    .wallet-card p { margin: 0; font-size: 12px; opacity: .9; }
+    .wallet-card h2 { margin: 8px 0 0; font-size: 28px; }
+
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .btn {
+      border: 0; border-radius: 12px; padding: 12px; font-weight: 700; color: #fff; cursor: pointer;
+    }
+    .btn-add { background: linear-gradient(110deg, #0e9245, #31cb75); }
+    .btn-withdraw { background: linear-gradient(110deg, #d24a13, #ff874a); }
+
+    .tabs { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tab {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab.active { background: rgba(47,123,255,.25); border-color: rgba(47,123,255,.6); }
+    .list { margin-top: 10px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: linear-gradient(160deg, var(--card), var(--card-2));
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: rgba(255,255,255,.02);
+      padding: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .muted { color: var(--muted); }
+
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 35; display: none;
+    }
+    .overlay.show { display: block; }
+    .modal {
+      position: fixed; z-index: 40; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      width: min(92%, 460px);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #09182f;
+      padding: 14px;
+      display: none;
+    }
+    .modal.show { display: block; }
+    .input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 11px;
+      margin-top: 8px;
+      outline: none;
+    }
+    .row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-lite { border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--text); }
+
+    .method-btn.active {
+      border-color: rgba(255,255,255,.45);
+      background: rgba(47,123,255,.35);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 78%;
+      max-width: 320px;
+      background: #09172d;
+      border-right: 1px solid var(--line);
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform .24s ease;
+      padding: 16px;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .menu-link {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: rgba(255,255,255,.03);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <a class="icon-btn" href="index.html">←</a>
+      <div class="title">MY WALLET</div>
+      <button class="icon-btn" id="menuBtn" type="button">☰</button>
+    </header>
+
+    <main class="content">
+      <section class="cards">
+        <article class="wallet-card cash">
+          <p>Deposit Cash</p>
+          <h2 id="cashBal">₹0</h2>
+        </article>
+        <article class="wallet-card win">
+          <p>Winnings</p>
+          <h2 id="winBal">₹0</h2>
+        </article>
+      </section>
+
+      <section class="actions">
+        <button id="addCashBtn" class="btn btn-add" type="button">ADD CASH</button>
+        <button id="withdrawBtn" class="btn btn-withdraw" type="button">WITHDRAW</button>
+      </section>
+
+      <section class="panel" style="margin-top:12px;">
+        <h3 style="margin:0 0 8px;">Refer & Earn</h3>
+        <div class="cards" style="grid-template-columns:1fr 1fr 1fr; gap:8px;">
+          <article class="wallet-card" style="min-height:88px;background:rgba(47,123,255,.15);">
+            <p>Total Refers</p>
+            <h2 id="totalRefers" style="font-size:20px;">0</h2>
+          </article>
+          <article class="wallet-card" style="min-height:88px;background:rgba(255,208,90,.15);">
+            <p>Total Earned</p>
+            <h2 id="totalEarned" style="font-size:20px;">₹0</h2>
+          </article>
+          <article class="wallet-card" style="min-height:88px;background:rgba(56,209,127,.15);">
+            <p>Referral Wallet</p>
+            <h2 id="referralWallet" style="font-size:20px;">₹0</h2>
+          </article>
+        </div>
+        <button id="withdrawReferralBtn" class="btn btn-add" type="button" style="margin-top:10px; width:100%;">Withdraw Commission to Cash</button>
+      </section>
+
+      <section class="tabs">
+        <button class="tab active" data-tab="deposit" type="button">Deposit History</button>
+        <button class="tab" data-tab="withdraw" type="button">Withdraw History</button>
+      </section>
+      <section class="list" id="historyList"></section>
+    </main>
+  </div>
+
+  <aside id="sidebar" class="sidebar" aria-hidden="true">
+    <h4>SR LUDO Menu</h4>
+    <a href="index.html" class="menu-link">Home</a>
+    <a href="#" class="menu-link" id="matchLink">Match History</a>
+    <a href="#" class="menu-link" id="depositLink">Deposit History</a>
+    <a href="#" class="menu-link" id="withdrawLink">Withdraw History</a>
+    <a href="wallet.html" class="menu-link">Wallet</a>
+    <a href="profile.html" class="menu-link">Profile</a>
+    <a href="#" class="menu-link" id="logoutBtn">Logout</a>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <section class="modal" id="depositModal">
+    <h3 style="margin:0;">Add Cash</h3>
+    <p class="muted" style="font-size:12px;">Pay to Admin UPI and submit UTR ID.</p>
+    <img src="qr.png" alt="Payment QR" style="width:200px;height:200px;display:block;margin:8px auto 10px;border-radius:12px;border:1px solid var(--line);object-fit:cover;" />
+    <label class="muted" style="font-size:12px;">Admin UPI ID</label>
+    <div class="row" style="margin-top:6px;">
+      <input class="input" id="adminUpi" value="srludo@okaxis" readonly />
+      <button id="copyUpiBtn" class="btn btn-lite" type="button">Copy</button>
+    </div>
+    <label class="muted" style="font-size:12px; margin-top:8px; display:block;">Amount</label>
+    <input class="input" id="depositAmount" type="number" min="10" placeholder="Enter amount" />
+    <label class="muted" style="font-size:12px; margin-top:8px; display:block;">UTR / Transaction ID</label>
+    <input class="input" id="utrInput" placeholder="Enter UTR" />
+    <label class="muted" style="font-size:12px; margin-top:8px; display:block;">Upload Payment Screenshot</label>
+    <input class="input" type="file" id="depositSS" accept="image/*" />
+    <div class="row">
+      <button id="submitDepositBtn" class="btn btn-add" type="button" style="flex:1;">Submit</button>
+      <button class="btn btn-lite" data-close-modal="depositModal" type="button">Close</button>
+    </div>
+  </section>
+
+  <section class="modal" id="withdrawModal">
+    <h3 style="margin:0;">Withdraw Winnings</h3>
+    <p class="muted" style="font-size:12px;">Minimum withdrawal: ₹100. Amount is debited only from winnings wallet.</p>
+
+    <label class="muted" style="font-size:12px; display:block; margin-top:8px;">Select Method</label>
+    <div class="row" style="margin-top:6px;">
+      <button type="button" id="methodUpiBtn" class="btn btn-lite method-btn active" data-method="UPI" style="flex:1;">Withdraw to UPI</button>
+      <button type="button" id="methodBankBtn" class="btn btn-lite method-btn" data-method="Bank" style="flex:1;">Withdraw to Bank</button>
+    </div>
+
+    <div id="withdrawMethodInfo" class="item" style="margin-top:10px; font-size:12px;"></div>
+
+    <label class="muted" style="font-size:12px;">Amount</label>
+    <input class="input" id="withdrawAmount" type="number" min="100" placeholder="Enter withdraw amount" />
+    <div class="row">
+      <button id="submitWithdrawBtn" class="btn btn-withdraw" type="button" style="flex:1;">Submit Request</button>
+      <button class="btn btn-lite" data-close-modal="withdrawModal" type="button">Close</button>
+    </div>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, get, set, push, onValue, query, orderByChild, limitToLast, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
+      authDomain: 'sr-ludo-4440b.firebaseapp.com',
+      databaseURL: 'https://sr-ludo-4440b-default-rtdb.firebaseio.com',
+      projectId: 'sr-ludo-4440b',
+      storageBucket: 'sr-ludo-4440b.firebasestorage.app',
+      messagingSenderId: '1080387235822',
+      appId: '1:1080387235822:web:77faea231641837950e8ff'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'ca44783bda6779b5e3913432bd243b30';
+
+    let currentPhone = (localStorage.getItem('sr_ludo_phone') || '').trim();
+    const phone = currentPhone;
+    if (!phone) {
+      window.location.href = 'index.html';
+      throw new Error('No phone found.');
+    }
+
+    const cashBal = document.getElementById('cashBal');
+    const winBal = document.getElementById('winBal');
+    const addCashBtn = document.getElementById('addCashBtn');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const historyList = document.getElementById('historyList');
+    const tabs = document.querySelectorAll('.tab');
+    const overlay = document.getElementById('overlay');
+    const depositModal = document.getElementById('depositModal');
+    const withdrawModal = document.getElementById('withdrawModal');
+    const copyUpiBtn = document.getElementById('copyUpiBtn');
+    const adminUpi = document.getElementById('adminUpi');
+    const submitDepositBtn = document.getElementById('submitDepositBtn');
+    const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
+    const withdrawMethodInfo = document.getElementById('withdrawMethodInfo');
+    const methodUpiBtn = document.getElementById('methodUpiBtn');
+    const methodBankBtn = document.getElementById('methodBankBtn');
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const totalRefers = document.getElementById('totalRefers');
+    const totalEarned = document.getElementById('totalEarned');
+    const referralWallet = document.getElementById('referralWallet');
+    const withdrawReferralBtn = document.getElementById('withdrawReferralBtn');
+
+    let activeTab = 'deposit';
+    let userData = {};
+
+    const fmt = (v = 0) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+    const showModal = (m) => { m.classList.add('show'); overlay.classList.add('show'); };
+    const closeModal = (m) => { m.classList.remove('show'); if (!document.querySelector('.modal.show') && !sidebar.classList.contains('open')) overlay.classList.remove('show'); };
+    const openSidebar = () => { sidebar.classList.add('open'); overlay.classList.add('show'); };
+    const closeSidebar = () => { sidebar.classList.remove('open'); if (!document.querySelector('.modal.show')) overlay.classList.remove('show'); };
+
+    const renderHistory = (records) => {
+  if (!records.length) {
+    historyList.innerHTML = '<div class="item muted">No records found.</div>';
+    return;
+  }
+  historyList.innerHTML = records.map((r) => {
+    // Status ke hisaab se color aur badge set karna
+    const status = (r.status || 'pending').toLowerCase();
+    let color = '#ffb34a'; // Default Yellow for Pending
+    if (status === 'approved' || status === 'success' || status === 'verified') color = '#38d17f'; // Green
+    if (status === 'rejected' || status === 'failed') color = '#ff3d4d'; // Red
+    
+    const dt = new Date(r.time || r.timestamp || Date.now()).toLocaleString('en-IN');
+    
+    return `
+      <div class="item" style="border-left: 4px solid ${color}; background: rgba(255,255,255,.02); padding: 12px; margin-bottom: 10px; border-radius: 8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-size:16px; color:#fff;">${fmt(r.amount)}</strong>
+          <span style="color:${color}; font-weight:800; text-transform:uppercase; font-size:10px; background:${color}22; padding: 2px 8px; border-radius: 4px;">${status}</span>
+        </div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">Date: ${dt}</div>
+        ${r.utr ? `<div class="muted" style="font-size:11px;">UTR: ${r.utr}</div>` : ''}
+        ${r.method ? `<div class="muted" style="font-size:11px;">Method: ${r.method}</div>` : ''}
+      </div>`;
+  }).join('');
+};
+
+    const loadHistory = async () => {
+  currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+  if (!currentPhone) return;
+
+  try {
+    // 1. Path ko sahi karein (Direct node se data uthayenge)
+    const path = activeTab === 'deposit' ? 'deposit_requests' : 'withdraw_requests';
+    const snap = await get(ref(db, path));
+    const allData = snap.val() || {};
+    
+    // 2. Sirf wahi data nikalein jo is user ka hai (Filter by phone)
+    const myRows = Object.values(allData).filter(item => item.phone === currentPhone);
+
+    // 3. Time ke hisaab se ulta (Newest first) sort karein
+    const sortedRows = myRows.sort((a, b) => {
+      const timeA = a.time || a.timestamp || 0;
+      const timeB = b.time || b.timestamp || 0;
+      return timeB - timeA;
+    });
+
+    renderHistory(sortedRows);
+  } catch (error) {
+    console.error('History load failed:', error);
+    renderHistory([]);
+  }
+};
+
+    const ensureUser = async () => {
+      const userRef = ref(db, `users/${phone}`);
+      const snap = await get(userRef);
+      if (!snap.exists()) {
+        await set(userRef, {
+          phone: currentPhone,
+          balance: 0,
+          win_balance: 0,
+          referral_balance: 0,
+          kyc_status: 'pending',
+          time: Date.now()
+        });
+      }
+    };
+
+
+    const uploadDepositScreenshot = async (file) => {
+            const fd = new FormData();
+      fd.append('image', file);
+      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+      const json = await resp.json();
+      const url = json?.data?.url;
+      if (!resp.ok || !url) throw new Error('Screenshot upload failed.');
+      return url;
+    };
+
+    const submitDeposit = async () => {
+      const amount = Number(document.getElementById('depositAmount').value);
+      const utr = document.getElementById('utrInput').value.trim();
+      const screenshotFile = document.getElementById('depositSS').files?.[0];
+      if (!amount || amount <= 0) return alert('Enter valid amount.');
+      if (!utr) return alert('Enter UTR/Transaction ID.');
+      if (!screenshotFile) return alert('Please upload payment screenshot.');
+
+      submitDepositBtn.disabled = true;
+      submitDepositBtn.textContent = 'Uploading...';
+      try {
+        currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+        if (!currentPhone) throw new Error('Login required. Please login again.');
+const reqRef = push(ref(db, 'deposit_requests'));        const screenshotUrl = await uploadDepositScreenshot(screenshotFile);
+        await set(reqRef, {
+          id: reqRef.key,
+          phone: currentPhone,
+          amount,
+          utr,
+          screenshot: screenshotUrl,
+          status: 'pending',
+          time: serverTimestamp()
+        });
+        alert('Deposit request submitted.');
+        closeModal(depositModal);
+        document.getElementById('depositAmount').value = '';
+        document.getElementById('utrInput').value = '';
+        document.getElementById('depositSS').value = '';
+        if (activeTab === 'deposit') loadHistory();
+      } catch (error) {
+        alert(error.message || 'Deposit request failed.');
+      } finally {
+        submitDepositBtn.disabled = false;
+        submitDepositBtn.textContent = 'Submit';
+      }
+    };
+
+    let currentMethod = 'UPI';
+
+    const hasPaymentDetails = (method) => {
+      if (method === 'UPI') return Boolean((userData?.upi_id || '').trim());
+      return Boolean((userData?.bank_acc || '').trim() && (userData?.bank_ifsc || '').trim() && (userData?.full_name || '').trim());
+    };
+
+    const getPaymentDetails = (method) => {
+      if (method === 'UPI') return (userData?.upi_id || '').trim();
+      return {
+        acc: (userData?.bank_acc || '').trim(),
+        ifsc: (userData?.bank_ifsc || '').trim(),
+        name: (userData?.full_name || '').trim()
+      };
+    };
+
+    const renderWithdrawMethodInfo = () => {
+      const method = currentMethod;
+      if (method === 'UPI') {
+        const upi = (userData?.upi_id || '').trim();
+        withdrawMethodInfo.innerHTML = upi
+          ? `<strong>UPI:</strong> ${upi}`
+          : '<span class="muted">UPI ID not found in profile. Please update profile to continue.</span>';
+        return;
+      }
+
+      const name = (userData?.full_name || '').trim();
+      const acc = (userData?.bank_acc || '').trim();
+      const ifsc = (userData?.bank_ifsc || '').trim();
+      if (name && acc && ifsc) {
+        withdrawMethodInfo.innerHTML = `<strong>Name:</strong> ${name}<br><strong>A/C:</strong> ${acc}<br><strong>IFSC:</strong> ${ifsc}`;
+      } else {
+        withdrawMethodInfo.innerHTML = '<span class="muted">Bank details not found in profile. Please update profile to continue.</span>';
+      }
+    };
+
+    const submitWithdraw = async () => {
+      const amount = Number(document.getElementById('withdrawAmount').value);
+      const method = currentMethod;
+
+      if (!userData || userData.kyc_status !== 'verified') {
+        alert('Please complete KYC first!');
+        window.location.href = 'profile.html';
+        return;
+      }
+
+      if (!hasPaymentDetails(method)) {
+        alert('Please save your selected payment method details in profile first.');
+        window.location.href = 'profile.html';
+        return;
+      }
+
+      if (!amount || amount < 100) return alert('Minimum withdrawal is ₹100.');
+      if (Number(userData.win_balance || 0) < amount) return alert('Insufficient winnings balance.');
+
+      submitWithdrawBtn.disabled = true;
+      try {
+        currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+        if (!currentPhone) throw new Error('Login required. Please login again.');
+        const reqRef = push(ref(db, `withdraw_requests/${currentPhone}`));
+        await set(reqRef, {
+          id: reqRef.key,
+          phone: currentPhone,
+          amount,
+          status: 'pending',
+          method: currentMethod,
+          timestamp: Date.now(),
+          details: currentMethod === 'UPI'
+            ? { upi_id: (userData?.upi_id || '').trim() }
+            : {
+                acc_no: (userData?.bank_acc || '').trim(),
+                ifsc: (userData?.bank_ifsc || '').trim(),
+                holder: (userData?.full_name || '').trim()
+              },
+          from_wallet: 'win_balance',
+          time: Date.now()
+        });
+        alert('Withdraw request submitted.');
+        closeModal(withdrawModal);
+        document.getElementById('withdrawAmount').value = '';
+        if (activeTab === 'withdraw') loadHistory();
+      } catch (error) {
+        alert(error.message || 'Withdraw request failed.');
+      } finally {
+        submitWithdrawBtn.disabled = false;
+      }
+    };
+
+    onValue(ref(db, `users/${phone}`), (snap) => {
+      userData = snap.val() || {};
+      cashBal.textContent = fmt(userData.balance);
+      winBal.textContent = fmt(userData.win_balance);
+      referralWallet.textContent = fmt(userData.referral_balance || 0);
+      renderWithdrawMethodInfo();
+    });
+
+  onValue(ref(db, `referrals/${phone}`), (snap) => {
+  const friendsList = snap.val() || {};
+  // Total kitne logo ko refer kiya uska count
+  const count = Object.keys(friendsList).length;
+  totalRefers.textContent = count;
+});
+
+// Total kitna kamaya wo user profile se uthayenge
+onValue(ref(db, `users/${phone}`), (snap) => {
+  const u = snap.val() || {};
+  userData = u; // Global variable update
+  cashBal.textContent = fmt(u.balance);
+  winBal.textContent = fmt(u.win_balance);
+  
+  // Referral Wallet aur Total Earnings dikhayein
+  referralWallet.textContent = fmt(u.referral_balance || 0);
+  totalEarned.textContent = fmt(u.referral_earnings_total || 0); 
+  renderWithdrawMethodInfo();
+});
+
+    await ensureUser();
+    await loadHistory();
+
+    addCashBtn.addEventListener('click', () => showModal(depositModal));
+    withdrawBtn.addEventListener('click', () => {
+      const method = currentMethod;
+      if (!hasPaymentDetails(method)) {
+        alert('Please save your payment details in profile first.');
+        window.location.href = 'profile.html';
+        return;
+      }
+      renderWithdrawMethodInfo();
+      showModal(withdrawModal);
+    });
+    submitDepositBtn.addEventListener('click', submitDeposit);
+    submitWithdrawBtn.addEventListener('click', submitWithdraw);
+    withdrawReferralBtn.addEventListener('click', async () => {
+      const available = Number(userData.referral_balance || 0);
+      if (available <= 0) {
+        alert('No referral commission available to transfer.');
+        return;
+      }
+
+      withdrawReferralBtn.disabled = true;
+      try {
+        const tx = await runTransaction(ref(db, `users/${phone}`), (user) => {
+          if (!user) return user;
+          const refBal = Number(user.referral_balance || 0);
+          if (refBal <= 0) return;
+          user.referral_balance = 0;
+          user.balance = Number(user.balance || 0) + refBal;
+          return user;
+        });
+
+        if (!tx.committed) throw new Error('Unable to transfer referral commission.');
+        alert('Referral commission transferred to cash wallet.');
+      } catch (error) {
+        alert(error.message || 'Transfer failed.');
+      } finally {
+        withdrawReferralBtn.disabled = false;
+      }
+    });
+
+    const setCurrentMethod = (method) => {
+      currentMethod = method === 'Bank' ? 'Bank' : 'UPI';
+      methodUpiBtn.classList.toggle('active', currentMethod === 'UPI');
+      methodBankBtn.classList.toggle('active', currentMethod === 'Bank');
+      renderWithdrawMethodInfo();
+    };
+
+    methodUpiBtn.addEventListener('click', () => setCurrentMethod('UPI'));
+    methodBankBtn.addEventListener('click', () => setCurrentMethod('Bank'));
+
+    copyUpiBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(adminUpi.value);
+      alert('UPI copied');
+    });
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        activeTab = tab.dataset.tab;
+        loadHistory();
+      });
+    });
+
+    document.querySelectorAll('[data-close-modal]').forEach((btn) => {
+      btn.addEventListener('click', () => closeModal(document.getElementById(btn.dataset.closeModal)));
+    });
+
+    menuBtn.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', () => {
+      closeSidebar();
+      document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
+      overlay.classList.remove('show');
+    });
+
+    document.getElementById('depositLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      closeSidebar();
+      tabs.forEach((t) => t.classList.remove('active'));
+      document.querySelector('[data-tab="deposit"]').classList.add('active');
+      activeTab = 'deposit';
+      loadHistory();
+    });
+
+    document.getElementById('withdrawLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      closeSidebar();
+      tabs.forEach((t) => t.classList.remove('active'));
+      document.querySelector('[data-tab="withdraw"]').classList.add('active');
+      activeTab = 'withdraw';
+      loadHistory();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('sr_ludo_phone');
+      localStorage.removeItem('sr_ludo_phone_verified');
+      window.location.href = 'index.html';
+    });
+
+    document.getElementById('matchLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      alert('Match history is available on home dashboard modal.');
+    });
+  </script>
+</body>
+</html> "
+
