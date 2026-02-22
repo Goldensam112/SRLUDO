@@ -333,36 +333,58 @@
     const closeSidebar = () => { sidebar.classList.remove('open'); if (!document.querySelector('.modal.show')) overlay.classList.remove('show'); };
 
     const renderHistory = (records) => {
-      if (!records.length) {
-        historyList.innerHTML = '<div class="item muted">No records found.</div>';
-        return;
-      }
-      historyList.innerHTML = records.map((r) => {
-        const amount = r.amount ?? '-';
-        const status = r.status ?? 'pending';
-        const dt = new Date(r.time || r.timestamp || Date.now()).toLocaleString('en-IN');
-        const utr = r.utr ? `<br>UTR: ${r.utr}` : '';
-        return `<div class="item"><strong>Amount: ${fmt(amount)}</strong><br>Status: ${status}<br>${dt}${utr}</div>`;
-      }).join('');
-    };
+  if (!records.length) {
+    historyList.innerHTML = '<div class="item muted">No records found.</div>';
+    return;
+  }
+  historyList.innerHTML = records.map((r) => {
+    // Status ke hisaab se color aur badge set karna
+    const status = (r.status || 'pending').toLowerCase();
+    let color = '#ffb34a'; // Default Yellow for Pending
+    if (status === 'approved' || status === 'success' || status === 'verified') color = '#38d17f'; // Green
+    if (status === 'rejected' || status === 'failed') color = '#ff3d4d'; // Red
+    
+    const dt = new Date(r.time || r.timestamp || Date.now()).toLocaleString('en-IN');
+    
+    return `
+      <div class="item" style="border-left: 4px solid ${color}; background: rgba(255,255,255,.02); padding: 12px; margin-bottom: 10px; border-radius: 8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-size:16px; color:#fff;">${fmt(r.amount)}</strong>
+          <span style="color:${color}; font-weight:800; text-transform:uppercase; font-size:10px; background:${color}22; padding: 2px 8px; border-radius: 4px;">${status}</span>
+        </div>
+        <div class="muted" style="font-size:11px; margin-top:6px;">Date: ${dt}</div>
+        ${r.utr ? `<div class="muted" style="font-size:11px;">UTR: ${r.utr}</div>` : ''}
+        ${r.method ? `<div class="muted" style="font-size:11px;">Method: ${r.method}</div>` : ''}
+      </div>`;
+  }).join('');
+};
 
     const loadHistory = async () => {
-      currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
-      if (!currentPhone) {
-        renderHistory([]);
-        return;
-      }
-      try {
-        const path = activeTab === 'deposit' ? `deposit_requests/${currentPhone}` : `withdraw_requests/${currentPhone}`;
-        const snap = await get(query(ref(db, path), orderByChild('time'), limitToLast(10)));
-        const list = snap.val() || {};
-        const rows = Object.values(list).sort((a, b) => (b.time || b.timestamp || 0) - (a.time || a.timestamp || 0));
-        renderHistory(rows);
-      } catch (error) {
-        console.error('History load failed:', error);
-        renderHistory([]);
-      }
-    };
+  currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
+  if (!currentPhone) return;
+
+  try {
+    // 1. Path ko sahi karein (Direct node se data uthayenge)
+    const path = activeTab === 'deposit' ? 'deposit_requests' : 'withdraw_requests';
+    const snap = await get(ref(db, path));
+    const allData = snap.val() || {};
+    
+    // 2. Sirf wahi data nikalein jo is user ka hai (Filter by phone)
+    const myRows = Object.values(allData).filter(item => item.phone === currentPhone);
+
+    // 3. Time ke hisaab se ulta (Newest first) sort karein
+    const sortedRows = myRows.sort((a, b) => {
+      const timeA = a.time || a.timestamp || 0;
+      const timeB = b.time || b.timestamp || 0;
+      return timeB - timeA;
+    });
+
+    renderHistory(sortedRows);
+  } catch (error) {
+    console.error('History load failed:', error);
+    renderHistory([]);
+  }
+};
 
     const ensureUser = async () => {
       const userRef = ref(db, `users/${phone}`);
