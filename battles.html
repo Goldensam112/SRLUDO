@@ -375,7 +375,21 @@
         return user;
       });
     }
+// Ye function 2% commission calculate karke bhejega
+async function processReferralCommission(winnerPhone, winAmount) {
+  try {
+    const userSnap = await get(ref(db, `users/${winnerPhone}`));
+    const referrerPhone = userSnap.val()?.referredBy;
 
+    if (referrerPhone) {
+      const commission = Math.round(winAmount * 0.02); // 2% ka hisaab
+      if (commission > 0) {
+        await creditCash(referrerPhone, commission); // Referrer ko paisa bhejo
+        console.log("Referral Commission Sent: ₹" + commission);
+      }
+    }
+  } catch (err) { console.error(err); }
+}
     async function ensureUserRecord() {
       const userRef = ref(db, `users/${phone}`);
       const userSnap = await get(userRef);
@@ -532,6 +546,8 @@
       const battle = tx.snapshot.val() || {};
       const winAmt = computeWinAmount(battle.amount);
       await creditWinning(battle.winnerPhone, winAmt);
+      // Winner ko paisa milte hi, uske Referrer ko 2% commission do
+await processReferralCommission(battle.winnerPhone, winAmt);
       alert('Result settled successfully.');
     }
 
