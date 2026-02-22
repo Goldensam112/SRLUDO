@@ -411,23 +411,36 @@
     }
 
     async function cancelOpenBattle(battleId) {
-      const battleRef = ref(db, `battles/${battleId}`);
-      const tx = await runTransaction(battleRef, (battle) => {
-        if (!battle || battle.status !== 'open' || battle.creatorPhone !== phone) return;
-        battle.status = 'cancelled';
-        battle.cancelledAt = Date.now();
-        battle.updatedAt = Date.now();
-        return battle;
-      });
+  const battleRef = ref(db, `battles/${battleId}`);
+  const tx = await runTransaction(battleRef, (battle) => {
+    if (!battle || battle.status !== 'open' || battle.creatorPhone !== phone) return;
+    battle.status = 'cancelled';
+    battle.cancelledAt = Date.now();
+    battle.updatedAt = Date.now();
+    return battle;
+  });
 
-      if (!tx.committed) {
-        alert('Cannot cancel this battle now.');
-        return;
-      }
+  if (!tx.committed) {
+    alert('Cannot cancel this battle now.');
+    return;
+  }
 
-      const battle = tx.snapshot.val();
-      await creditCash(phone, Number(battle.amount || 0));
+  const battle = tx.snapshot.val();
+  const deductData = battle.creatorDeduct; // चेक करेगा पैसा कहाँ से कटा था
+
+  await runTransaction(ref(db, `users/${phone}`), (user) => {
+    if (!user) return user;
+    if (deductData) {
+      // जहाँ से पैसा लिया था, वहीँ वापस जाएगा
+      user.win_balance = Number(user.win_balance || 0) + Number(deductData.fromWin || 0);
+      user.balance = Number(user.balance || 0) + Number(deductData.fromCash || 0);
+    } else {
+      // Fallback: अगर पुराना डेटा न मिले तो सीधे Cash में
+      user.balance = Number(user.balance || 0) + Number(battle.amount || 0);
     }
+    return user;
+  });
+}
 
     async function joinBattle(battleId) {
       const battleRef = ref(db, `battles/${battleId}`);
