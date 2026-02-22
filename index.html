@@ -27,14 +27,14 @@
       --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     }
 
-    /* 1. NEW: Hide body initially to prevent login flash */
+    /* 1. Hide body initially to prevent flash */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
       background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
       color: var(--text);
       min-height: 100vh;
-      visibility: hidden; /* Start Hidden */
+      visibility: hidden; 
       opacity: 0;
     }
     body.ready {
@@ -242,7 +242,7 @@
     };
 
     const showHistory = async (type) => {
-      let currentPhone = localStorage.getItem('sr_ludo_phone');
+      const currentPhone = localStorage.getItem('sr_ludo_phone');
       if (!currentPhone) return;
       document.getElementById('modalTitle').textContent = type.replace('_', ' ').toUpperCase();
       historyList.innerHTML = '<p style="color:gray;">Loading...</p>';
@@ -269,7 +269,7 @@
       });
     };
 
-    // --- UPDATED LOGIC TO PREVENT BLACK SCREEN & FIX LOGIN ---
+    // --- SMART LOGIC: SWITCH VIEWS INSTANTLY ---
     const checkAuthAndShow = () => {
       const currentPhone = localStorage.getItem('sr_ludo_phone');
       if (currentPhone) {
@@ -280,21 +280,37 @@
         loginScreen.classList.remove('hidden');
         dashboard.classList.add('hidden');
       }
-      // Reveal the body after logic is set
+      // Reveal UI
       setTimeout(() => { document.body.classList.add('ready'); }, 50);
     };
 
-    window.phoneEmailListener = (userObj) => {
-      if (userObj.phone_no) {
-        localStorage.setItem('sr_ludo_phone', userObj.phone_no);
-        // Instant visual switch
-        loginScreen.classList.add('hidden');
-        dashboard.classList.remove('hidden');
+    // --- SMART LISTENER: HANDLE BOTH OBJECT & URL RESPONSES ---
+    window.phoneEmailListener = async (userObj) => {
+      try {
+        let verifiedPhone = "";
+        if (userObj?.user_json_url) {
+          const response = await fetch(userObj.user_json_url);
+          const details = await response.json();
+          verifiedPhone = details.user_phone_number || details.phone_no;
+        } else {
+          verifiedPhone = userObj?.phone_no || userObj?.phone;
+        }
+
+        if (verifiedPhone) {
+          const cleanPhone = verifiedPhone.startsWith('+') ? verifiedPhone : `+${verifiedPhone}`;
+          localStorage.setItem('sr_ludo_phone', cleanPhone);
+          
+          // Switch view instantly
+          loginScreen.classList.add('hidden');
+          dashboard.classList.remove('hidden');
+          document.body.classList.add('ready');
+          
+          // Refresh to sync Firebase data
+          location.reload(); 
+        }
+      } catch (error) {
+        console.error("Login Error:", error);
         document.body.classList.add('ready');
-        location.reload(); 
-      } else {
-        document.body.classList.add('ready');
-        alert("Login failed. Please try again.");
       }
     };
 
@@ -307,6 +323,7 @@
       link.onclick = (e) => { e.preventDefault(); showHistory(link.dataset.type); toggleSidebar(false); };
     });
 
+    // Execute check
     checkAuthAndShow();
   </script>
 </body>
