@@ -137,6 +137,12 @@
     .row { display: flex; gap: 8px; margin-top: 10px; }
     .btn-lite { border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--text); }
 
+    .method-btn.active {
+      border-color: rgba(255,255,255,.45);
+      background: rgba(47,123,255,.35);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    }
+
     .sidebar {
       position: fixed;
       inset: 0 auto 0 0;
@@ -254,8 +260,8 @@
 
     <label class="muted" style="font-size:12px; display:block; margin-top:8px;">Select Method</label>
     <div class="row" style="margin-top:6px;">
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="radio" name="withdrawMethod" value="UPI" checked /> Withdraw to UPI</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="radio" name="withdrawMethod" value="Bank" /> Withdraw to Bank</label>
+      <button type="button" id="methodUpiBtn" class="btn btn-lite method-btn active" data-method="UPI" style="flex:1;">Withdraw to UPI</button>
+      <button type="button" id="methodBankBtn" class="btn btn-lite method-btn" data-method="Bank" style="flex:1;">Withdraw to Bank</button>
     </div>
 
     <div id="withdrawMethodInfo" class="item" style="margin-top:10px; font-size:12px;"></div>
@@ -308,6 +314,8 @@
     const submitDepositBtn = document.getElementById('submitDepositBtn');
     const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
     const withdrawMethodInfo = document.getElementById('withdrawMethodInfo');
+    const methodUpiBtn = document.getElementById('methodUpiBtn');
+    const methodBankBtn = document.getElementById('methodBankBtn');
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const totalRefers = document.getElementById('totalRefers');
@@ -420,7 +428,7 @@
       }
     };
 
-    const getSelectedWithdrawMethod = () => document.querySelector('input[name="withdrawMethod"]:checked')?.value || 'UPI';
+    let currentMethod = 'UPI';
 
     const hasPaymentDetails = (method) => {
       if (method === 'UPI') return Boolean((userData?.upi_id || '').trim());
@@ -437,7 +445,7 @@
     };
 
     const renderWithdrawMethodInfo = () => {
-      const method = getSelectedWithdrawMethod();
+      const method = currentMethod;
       if (method === 'UPI') {
         const upi = (userData?.upi_id || '').trim();
         withdrawMethodInfo.innerHTML = upi
@@ -458,7 +466,7 @@
 
     const submitWithdraw = async () => {
       const amount = Number(document.getElementById('withdrawAmount').value);
-      const method = getSelectedWithdrawMethod();
+      const method = currentMethod;
 
       if (!userData || userData.kyc_status !== 'verified') {
         alert('Please complete KYC first!');
@@ -484,9 +492,16 @@
           id: reqRef.key,
           phone: currentPhone,
           amount,
-          method,
-          payment_details: getPaymentDetails(method),
           status: 'pending',
+          method: currentMethod,
+          timestamp: Date.now(),
+          details: currentMethod === 'UPI'
+            ? { upi_id: (userData?.upi_id || '').trim() }
+            : {
+                acc_no: (userData?.bank_acc || '').trim(),
+                ifsc: (userData?.bank_ifsc || '').trim(),
+                holder: (userData?.full_name || '').trim()
+              },
           from_wallet: 'win_balance',
           time: Date.now()
         });
@@ -521,7 +536,7 @@
 
     addCashBtn.addEventListener('click', () => showModal(depositModal));
     withdrawBtn.addEventListener('click', () => {
-      const method = getSelectedWithdrawMethod();
+      const method = currentMethod;
       if (!hasPaymentDetails(method)) {
         alert('Please save your payment details in profile first.');
         window.location.href = 'profile.html';
@@ -559,9 +574,15 @@
       }
     });
 
-    document.querySelectorAll('input[name="withdrawMethod"]').forEach((radio) => {
-      radio.addEventListener('change', renderWithdrawMethodInfo);
-    });
+    const setCurrentMethod = (method) => {
+      currentMethod = method === 'Bank' ? 'Bank' : 'UPI';
+      methodUpiBtn.classList.toggle('active', currentMethod === 'UPI');
+      methodBankBtn.classList.toggle('active', currentMethod === 'Bank');
+      renderWithdrawMethodInfo();
+    };
+
+    methodUpiBtn.addEventListener('click', () => setCurrentMethod('UPI'));
+    methodBankBtn.addEventListener('click', () => setCurrentMethod('Bank'));
 
     copyUpiBtn.addEventListener('click', async () => {
       await navigator.clipboard.writeText(adminUpi.value);
