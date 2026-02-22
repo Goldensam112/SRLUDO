@@ -230,6 +230,7 @@
   <section class="modal" id="depositModal">
     <h3 style="margin:0;">Add Cash</h3>
     <p class="muted" style="font-size:12px;">Pay to Admin UPI and submit UTR ID.</p>
+    <img src="qr.png" alt="Payment QR" style="width:200px;height:200px;display:block;margin:8px auto 10px;border-radius:12px;border:1px solid var(--line);object-fit:cover;" />
     <label class="muted" style="font-size:12px;">Admin UPI ID</label>
     <div class="row" style="margin-top:6px;">
       <input class="input" id="adminUpi" value="srludo@okaxis" readonly />
@@ -239,6 +240,8 @@
     <input class="input" id="depositAmount" type="number" min="10" placeholder="Enter amount" />
     <label class="muted" style="font-size:12px; margin-top:8px; display:block;">UTR / Transaction ID</label>
     <input class="input" id="utrInput" placeholder="Enter UTR" />
+    <label class="muted" style="font-size:12px; margin-top:8px; display:block;">Upload Payment Screenshot</label>
+    <input class="input" type="file" id="depositSS" accept="image/*" />
     <div class="row">
       <button id="submitDepositBtn" class="btn btn-add" type="button" style="flex:1;">Submit</button>
       <button class="btn btn-lite" data-close-modal="depositModal" type="button">Close</button>
@@ -258,7 +261,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getDatabase, ref, get, set, push, onValue, query, orderByChild, limitToLast, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+    import { getDatabase, ref, get, set, push, onValue, query, orderByChild, limitToLast, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
@@ -272,6 +275,8 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
+    const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'YOUR_IMGBB_API_KEY';
 
     let currentPhone = (localStorage.getItem('sr_ludo_phone') || '').trim();
     const phone = currentPhone;
@@ -356,34 +361,55 @@
       }
     };
 
+
+    const uploadDepositScreenshot = async (file) => {
+      if (!IMGBB_API_KEY || IMGBB_API_KEY === 'YOUR_IMGBB_API_KEY') {
+        throw new Error('ImgBB API key missing. Please set sr_ludo_imgbb_api_key.');
+      }
+      const fd = new FormData();
+      fd.append('image', file);
+      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+      const json = await resp.json();
+      const url = json?.data?.url;
+      if (!resp.ok || !url) throw new Error('Screenshot upload failed.');
+      return url;
+    };
+
     const submitDeposit = async () => {
       const amount = Number(document.getElementById('depositAmount').value);
       const utr = document.getElementById('utrInput').value.trim();
+      const screenshotFile = document.getElementById('depositSS').files?.[0];
       if (!amount || amount <= 0) return alert('Enter valid amount.');
       if (!utr) return alert('Enter UTR/Transaction ID.');
+      if (!screenshotFile) return alert('Please upload payment screenshot.');
 
       submitDepositBtn.disabled = true;
+      submitDepositBtn.textContent = 'Uploading...';
       try {
         currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
         if (!currentPhone) throw new Error('Login required. Please login again.');
         const reqRef = push(ref(db, `deposit_requests/${currentPhone}`));
+        const screenshotUrl = await uploadDepositScreenshot(screenshotFile);
         await set(reqRef, {
           id: reqRef.key,
           phone: currentPhone,
           amount,
           utr,
+          screenshot: screenshotUrl,
           status: 'pending',
-          time: Date.now()
+          time: serverTimestamp()
         });
         alert('Deposit request submitted.');
         closeModal(depositModal);
         document.getElementById('depositAmount').value = '';
         document.getElementById('utrInput').value = '';
+        document.getElementById('depositSS').value = '';
         if (activeTab === 'deposit') loadHistory();
       } catch (error) {
         alert(error.message || 'Deposit request failed.');
       } finally {
         submitDepositBtn.disabled = false;
+        submitDepositBtn.textContent = 'Submit';
       }
     };
 
