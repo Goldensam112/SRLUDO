@@ -154,6 +154,13 @@
     .st-playing { color: #82b9ff; }
     .st-dispute { color: #ffc978; }
     .st-completed { color: #7fffbc; }
+    .win-highlight {
+  color: #38d17f; /* Green color */
+  font-size: 18px; /* Thoda bada size */
+  font-weight: 800; /* Bold text */
+  display: block;
+  margin-top: 5px;
+}
     .room-code {
       margin-top: 8px;
       font-size: 30px;
@@ -647,8 +654,8 @@
             <strong>Battle ₹${b.amount}</strong>
             <span class="status ${statusClass(b.status)}">${b.status.toUpperCase()}</span>
           </div>
-          <div class="small muted">Win: ${fmt(b.winAmount)} • Creator: ${maskPhone(b.creatorPhone)} • Joiner: ${maskPhone(b.joinerPhone)}</div>
-${b.winnerPhone ? `<div class="small" style="margin-top:6px;color:var(--ok);">Winner: ${maskPhone(b.winnerPhone)}</div>` : ''}          ${battleControls(b)}
+<div class="small muted">Creator: ${maskPhone(b.creatorPhone)} • Joiner: ${maskPhone(b.joinerPhone)}</div>
+<div class="win-highlight">Win: ${fmt(b.winAmount)}</div>${b.winnerPhone ? `<div class="small" style="margin-top:6px;color:var(--ok);">Winner: ${maskPhone(b.winnerPhone)}</div>` : ''}          ${battleControls(b)}
         </div>
       `).join('');
     }
