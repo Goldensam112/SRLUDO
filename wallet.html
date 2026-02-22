@@ -360,25 +360,27 @@
 };
 
     const loadHistory = async () => {
+  // 1. Check karo ki user login hai ya nahi
   currentPhone = (localStorage.getItem('sr_ludo_phone') || phone || '').trim();
   if (!currentPhone) return;
 
   try {
-    // 1. Path ko sahi karein (Direct node se data uthayenge)
+    // 2. Sahi rasta (path) chuno: Agar Deposit tab hai toh 'deposit_requests' varna 'withdraw_requests'
     const path = activeTab === 'deposit' ? 'deposit_requests' : 'withdraw_requests';
     const snap = await get(ref(db, path));
     const allData = snap.val() || {};
     
-    // 2. Sirf wahi data nikalein jo is user ka hai (Filter by phone)
+    // 3. FILTER: Poore database mein se sirf is user (+91...) ka data nikalo
     const myRows = Object.values(allData).filter(item => item.phone === currentPhone);
 
-    // 3. Time ke hisaab se ulta (Newest first) sort karein
+    // 4. SORT: Nayi requests ko sabse upar dikhao (Time ke hisaab se)
     const sortedRows = myRows.sort((a, b) => {
       const timeA = a.time || a.timestamp || 0;
       const timeB = b.time || b.timestamp || 0;
       return timeB - timeA;
     });
 
+    // 5. Screen par dikhao
     renderHistory(sortedRows);
   } catch (error) {
     console.error('History load failed:', error);
