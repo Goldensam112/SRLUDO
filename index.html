@@ -27,14 +27,23 @@
       --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
     }
 
-    * { box-sizing: border-box; }
+    /* 1. NEW: Hide body initially to prevent login flash */
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
       background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
       color: var(--text);
       min-height: 100vh;
+      visibility: hidden;
+      opacity: 0;
     }
+    body.ready {
+      visibility: visible;
+      opacity: 1;
+      transition: opacity 0.2s ease-in;
+    }
+
+    * { box-sizing: border-box; }
     .hidden { display: none !important; }
     .app {
       max-width: 540px;
@@ -45,7 +54,7 @@
       padding-bottom: 90px;
     }
 
-    /* --- ORIGINAL SIDEBAR & OVERLAY --- */
+    /* --- SIDEBAR & OVERLAY --- */
     .sidebar {
       position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d;
       border-right: 1px solid var(--line); z-index: 150; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px;
@@ -65,7 +74,7 @@
     }
     .main-logo { height: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--accent)); }
 
-    /* --- DASHBOARD HEADER --- */
+    /* --- HEADER --- */
     .sticky-header {
       position: sticky; top: 0; z-index: 100; background: #1e293b;
       padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
@@ -74,7 +83,6 @@
     .hamburger { border: none; background: none; color: white; font-size: 24px; cursor: pointer; }
     .nav-logo { height: 35px; }
     
-    /* --- RESTORED PREMIUM WALLET PILLS --- */
     .wallets { display: flex; gap: 8px; }
     .pill {
       min-width: 100px; border-radius: 999px; padding: 7px 11px; font-size: 11px; text-align: center;
@@ -84,14 +92,12 @@
     .cash-pill { background: linear-gradient(130deg, #0f49b3, #2a89ff); }
     .win-pill { background: linear-gradient(130deg, var(--gold-1), var(--gold-2)); color: #1f1711; }
 
-    /* --- ANNOUNCEMENT --- */
     .announcement {
       background: linear-gradient(90deg, #0f172a, #1e293b);
       margin: 15px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--gold-2);
       color: white; text-align: center; font-size: 13px; font-weight: 500;
     }
 
-    /* --- GAME GRID LAYOUT --- */
     .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
     .game-card {
       background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow);
@@ -108,7 +114,6 @@
     }
     .dot { width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: blink 1s infinite; }
 
-    /* --- HISTORY MODAL --- */
     .modal {
       position: fixed; left: 50%; top: 50%; width: min(92%, 460px); transform: translate(-50%, -50%);
       background: #0a1a32; border: 1px solid var(--line); border-radius: 14px; z-index: 200; padding: 16px;
@@ -117,7 +122,6 @@
     .modal.show { display: block; }
     .record { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 12px; background: rgba(255,255,255,0.05); }
 
-    /* --- BOTTOM NAV --- */
     .bottom-nav {
       position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(540px, 100%);
       background: #ffffff; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(4, 1fr);
@@ -132,7 +136,7 @@
 <body>
 
   <div class="app">
-    <section id="loginScreen" class="login-screen">
+    <section id="loginScreen" class="login-screen hidden">
       <div class="login-card">
         <img src="logo.png" alt="Logo" class="main-logo">
         <p style="color:var(--text-dark); margin-bottom: 20px;">Premium Battle Arena</p>
@@ -234,7 +238,7 @@
 
     let currentPhone = localStorage.getItem('sr_ludo_phone');
 
-    // Sidebar & Modal Functions (Original Logic)
+    // Sidebar & Modal Functions
     const toggleSidebar = (show) => {
       sidebar.classList.toggle('open', show);
       overlay.classList.toggle('show', show);
@@ -267,8 +271,25 @@
         cashAmount.textContent = `₹${u.balance || 0}`;
         winAmount.textContent = `₹${u.win_balance || 0}`;
       });
+      // Section is already switched by tryAutoLogin, but ensuring here too.
       loginScreen.classList.add('hidden');
       dashboard.classList.remove('hidden');
+    };
+
+    // 2. MODIFIED: Instant Auth Check to prevent login flash
+    const checkAuthAndShow = () => {
+      if (currentPhone) {
+        // Show dashboard immediately if token exists
+        loginScreen.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        initUser(currentPhone);
+      } else {
+        // Show login screen
+        loginScreen.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+      }
+      // Reveal the body only after switching the correct section
+      document.body.classList.add('ready');
     };
 
     // Event Listeners
@@ -289,7 +310,8 @@
       }
     };
 
-    if (currentPhone) initUser(currentPhone);
+    // Run the check
+    checkAuthAndShow();
   </script>
 </body>
 </html>
