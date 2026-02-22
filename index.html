@@ -15,14 +15,11 @@
     :root {
       --bg: #040913;
       --card: #ffffff;
-      --text: #e8efff;
       --text-dark: #1e293b;
       --muted: #9fb0d1;
       --line: rgba(255, 255, 255, 0.08);
       --accent: #2f7bff;
-      --gold-1: #a86b00;
-      --gold-2: #ffd05a;
-      --danger: #ff3d4d;
+      --gold-2: #ffd76c;
       --shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     }
 
@@ -30,72 +27,74 @@
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
-      background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
-      color: var(--text);
-      min-height: 100vh;
+      background-color: #f1f5f9;
     }
     .hidden { display: none !important; }
+
     .app {
       max-width: 540px;
       margin: 0 auto;
+      background: #f8fafc;
       min-height: 100vh;
       position: relative;
-      background: #f1f5f9;
       padding-bottom: 90px;
     }
 
-    /* --- SIDEBAR & OVERLAY (Original Features) --- */
-    .sidebar {
-      position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d;
-      border-right: 1px solid var(--line); z-index: 200; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px;
-    }
-    .sidebar.open { transform: translateX(0); }
-    .menu-link {
-      display: block; color: var(--text); text-decoration: none; border: 1px solid var(--line); padding: 11px 12px;
-      border-radius: 10px; margin-bottom: 10px; background: rgba(255,255,255,0.02); font-size: 14px;
-    }
-    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 150; display: none; }
-    .overlay.show { display: block; }
-
-    /* --- HEADER (Original) --- */
+    /* --- HEADER: LOGO TO THE RIGHT OF MENU --- */
     .sticky-header {
-      position: sticky; top: 0; z-index: 100; background: #1e293b;
-      padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; color: white;
+      position: sticky; top: 0; z-index: 100;
+      background: #1e293b;
+      padding: 10px 15px;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .hamburger { border: none; background: none; color: white; font-size: 24px; cursor: pointer; }
-    .nav-logo { height: 35px; }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .hamburger { border: none; background: none; color: white; font-size: 24px; cursor: pointer; padding: 0; }
+    .nav-logo { height: 35px; width: auto; }
+    
     .wallets { display: flex; gap: 8px; }
     .pill {
       background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 50px; padding: 5px 12px; font-size: 11px; text-align: center; min-width: 80px;
+      border-radius: 50px; padding: 5px 12px; font-size: 11px; text-align: center; min-width: 85px;
     }
     .pill strong { display: block; font-size: 14px; color: #ffd76c; }
 
-    /* --- ANNOUNCEMENT (Image Style) --- */
     .announcement {
       background: linear-gradient(90deg, #0f172a, #1e293b);
       margin: 15px; padding: 15px; border-radius: 12px; border: 1.5px solid #ffd76c;
       color: white; text-align: center; font-size: 13px; font-weight: 500;
     }
 
-    /* --- GAME GRID (Your Request) --- */
+    /* --- GAME GRID WITH LABELS --- */
     .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
     .game-card {
       background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow);
-      position: relative; cursor: pointer; aspect-ratio: 1/1; border: 1px solid #e2e8f0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; cursor: pointer; aspect-ratio: 1/1.2; 
+      display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0;
     }
+    .game-card .img-wrap { width: 100%; height: 75%; overflow: hidden; }
     .game-card img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .game-label { 
+      height: 25%; width: 100%; display: flex; align-items: center; justify-content: center;
+      background: white; color: var(--text-dark); font-weight: 700; font-size: 14px;
+    }
+
     .live-tag {
       position: absolute; top: 8px; right: 8px; background: white; color: #ff3d4d;
       font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 50px; display: flex; align-items: center; gap: 4px;
+      z-index: 5;
     }
     .live-dot { width: 6px; height: 6px; background: #ff3d4d; border-radius: 50%; animation: blink 1s infinite; }
 
-    /* --- LOGIN & MODALS --- */
-    .login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; }
-    .login-card { background: white; width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; text-align: center; }
-    .main-logo { height: 80px; margin-bottom: 20px; }
+    /* --- SIDEBAR & MODALS --- */
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d;
+      z-index: 200; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .menu-link { display: block; color: white; text-decoration: none; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 150; display: none; }
+    .overlay.show { display: block; }
     .modal {
       position: fixed; left: 50%; top: 50%; width: min(92%, 460px); transform: translate(-50%, -50%);
       background: #0a1a32; border: 1px solid var(--line); border-radius: 14px; z-index: 300; padding: 16px;
@@ -104,7 +103,6 @@
     .modal.show { display: block; }
     .record { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 12px; background: rgba(255,255,255,0.05); }
 
-    /* --- BOTTOM NAV --- */
     .bottom-nav {
       position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
       width: min(540px, 100%); background: white; display: flex; justify-content: space-around;
@@ -118,22 +116,12 @@
 </head>
 <body>
   <div class="app">
-    <section id="loginScreen" class="login-screen">
-      <div class="login-card">
-        <img src="logo.png" alt="SR Ludo" class="main-logo">
-        <p style="color:var(--text-dark); margin-bottom: 20px;">Premium Battle Platform</p>
-        <input id="referralCode" type="text" placeholder="Referral Code (Optional)" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;">
-        <button id="loginBtn" style="width:100%; background:#2f7bff; color:white; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">Continue with Phone</button>
-        <div class="signin-wrap" style="margin-top: 15px;">
-          <div class="pe_signin_button" data-client-id="17286597723145724436" data-theme="dark"></div>
-        </div>
-      </div>
-    </section>
-
     <section id="dashboard" class="hidden">
       <header class="sticky-header">
-        <button id="menuBtn" class="hamburger">☰</button>
-        <img src="logo.png" alt="Logo" class="nav-logo">
+        <div class="header-left">
+          <button id="menuBtn" class="hamburger">☰</button>
+          <img src="logo.png" alt="Logo" class="nav-logo">
+        </div>
         <div class="wallets">
           <div class="pill">Cash<strong id="cashAmount">0</strong></div>
           <div class="pill">Winning<strong id="winAmount">0</strong></div>
@@ -141,19 +129,22 @@
       </header>
 
       <div class="announcement">
-        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
+        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
       </div>
 
       <div class="game-grid">
         <div class="game-card" id="classicCard">
           <div class="live-tag"><span class="live-dot"></span> LIVE</div>
-          <img src="classic.png" alt="Ludo Classic">
+          <div class="img-wrap"><img src="classic.png" alt="Classic Ludo"></div>
+          <div class="game-label">Classic Ludo</div>
         </div>
         
         <div class="game-card" onclick="window.location.href='https://wa.me/916261642944'">
           <div class="live-tag"><span class="live-dot"></span> LIVE</div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width: 50%; height: auto; margin-bottom: 5px;">
-          <strong style="color: var(--text-dark); font-size: 16px;">SUPPORT</strong>
+          <div class="img-wrap" style="display:flex; align-items:center; justify-content:center; background:#f8fafc;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:50%; height:auto;">
+          </div>
+          <div class="game-label">Support</div>
         </div>
       </div>
 
@@ -167,6 +158,18 @@
         <a href="wallet.html" class="nav-item">💼<br>Wallet</a>
         <a href="profile.html" class="nav-item">👤<br>Profile</a>
       </nav>
+    </section>
+
+    <section id="loginScreen" class="login-screen">
+      <div class="login-card">
+        <img src="logo.png" alt="SR Ludo" class="main-logo" style="height:80px; margin-bottom:20px;">
+        <p style="color:var(--text-dark); margin-bottom: 20px;">Premium Battle Platform</p>
+        <input id="referralCode" type="text" placeholder="Referral Code (Optional)" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px;">
+        <button id="loginBtn" style="width:100%; background:#2f7bff; color:white; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">Continue with Phone</button>
+        <div class="signin-wrap" style="margin-top: 15px;">
+          <div class="pe_signin_button" data-client-id="17286597723145724436" data-theme="dark"></div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -204,7 +207,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
     const loginScreen = document.getElementById('loginScreen');
     const dashboard = document.getElementById('dashboard');
     const cashAmount = document.getElementById('cashAmount');
@@ -216,25 +218,22 @@
 
     let currentPhone = localStorage.getItem('sr_ludo_phone');
 
-    // Sidebar & Modal Functions
     const toggleSidebar = (show) => { sidebar.classList.toggle('open', show); overlay.classList.toggle('show', show); };
+    
     const showHistory = async (type) => {
       if (!currentPhone) return;
       document.getElementById('modalTitle').textContent = type.replace('_', ' ').toUpperCase();
       historyList.innerHTML = '<p>Loading records...</p>';
       historyModal.classList.add('show');
       overlay.classList.add('show');
-      
       const snap = await get(query(ref(db, `${type}/${currentPhone}`), limitToLast(15)));
       const list = snap.val();
       if (!list) { historyList.innerHTML = 'No records found.'; return; }
-      
       historyList.innerHTML = Object.entries(list).reverse().map(([id, item]) => 
         `<div class="record">#${id.slice(-6)} - ₹${item.amount || item.entry_fee || 0} [${item.status || 'Success'}]</div>`
       ).join('');
     };
 
-    // User Session
     const initUser = async (phone) => {
       const userRef = ref(db, `users/${phone}`);
       onValue(userRef, (s) => {
@@ -246,7 +245,6 @@
       dashboard.classList.remove('hidden');
     };
 
-    // Event Handlers
     document.getElementById('menuBtn').onclick = () => toggleSidebar(true);
     overlay.onclick = () => { toggleSidebar(false); historyModal.classList.remove('show'); overlay.classList.remove('show'); };
     document.getElementById('closeModalBtn').onclick = () => { historyModal.classList.remove('show'); overlay.classList.remove('show'); };
@@ -257,7 +255,6 @@
       link.onclick = (e) => { e.preventDefault(); showHistory(link.dataset.type); toggleSidebar(false); };
     });
 
-    // Login Callback
     window.phoneEmailListener = (userObj) => {
       if (userObj.phone_no) {
         localStorage.setItem('sr_ludo_phone', userObj.phone_no);
