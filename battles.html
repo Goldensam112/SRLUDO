@@ -600,8 +600,8 @@
     }
 
     function battleControls(b) {
-      const meCreator = b.creatorPhone === srplayer;
-      const meJoiner = b.joinerPhone === srplayer;
+      const meCreator = b.creatorPhone === phone;
+      const meJoiner = b.joinerPhone === phone;
       const meParticipant = meCreator || meJoiner;
       if (!meParticipant) return '';
 
