@@ -309,7 +309,15 @@
 
     const fmt = (n = 0) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
     const statusClass = (st = '') => ({ open: 'st-open', playing: 'st-playing', pending: 'st-dispute', dispute: 'st-dispute', completed: 'st-completed' }[st] || '');
-    const computeWinAmount = (amount) => ({ 100: 190, 500: 970 }[Number(amount)] ?? Math.floor(Number(amount) * 1.9));
+    const computeWinAmount = (amount) => {
+      const a = Number(amount || 0);
+      if (a <= 0) return 0;
+      if (a >= 500) {
+        const pool = a * 2;
+        return Math.round(pool - (pool * 0.06));
+      }
+      return Math.round(a * 1.9);
+    };
 
     const showModal = (node) => { node.classList.add('show'); overlay.classList.add('show'); };
     const closeModal = (node) => { node.classList.remove('show'); if (!document.querySelector('.modal.show')) overlay.classList.remove('show'); };
@@ -351,39 +359,6 @@
         if (!user) return user;
         user.win_balance = Number(user.win_balance || 0) + Number(amount || 0);
         return user;
-      });
-    }
-
-    async function creditReferralCommission(winnerPhone, winningAmount) {
-      const winnerSnap = await get(ref(db, `users/${winnerPhone}`));
-      const winner = winnerSnap.val() || {};
-      const referrerPhone = normalizePhone(winner.referredBy);
-      if (!referrerPhone || referrerPhone === winnerPhone) return;
-
-      const commission = Number((Number(winningAmount || 0) * 0.02).toFixed(2));
-      if (!commission) return;
-
-      await runTransaction(ref(db, `users/${referrerPhone}`), (user) => {
-        if (!user) return user;
-        user.referral_balance = Number(user.referral_balance || 0) + commission;
-        return user;
-      });
-
-      await runTransaction(ref(db, `referrals/${referrerPhone}/earnings_total`), (amount) => Number(amount || 0) + commission);
-      await set(ref(db, `referrals/${referrerPhone}/friends_list/${winnerPhone}`), {
-        phone: winnerPhone,
-        joinedAt: winner.time || Date.now()
-      });
-
-      const historyRef = push(ref(db, `referrals/${referrerPhone}/referral_history`));
-      await set(historyRef, {
-        id: historyRef.key,
-        winnerPhone,
-        winnerName: winner.name || winner.full_name || winnerPhone,
-        message: `Earned ₹${commission} from ${(winner.name || winner.full_name || 'Player')}'s win.`,
-        amount: commission,
-        sourcePrize: Number(winningAmount || 0),
-        time: Date.now()
       });
     }
 
@@ -474,20 +449,6 @@
       }
     }
 
-    async function writeMatchHistoryEntry(playerPhone, battle, result) {
-      if (!playerPhone || !battle?.id) return;
-      await update(ref(db, `match_history/${playerPhone}/${battle.id}`), {
-        battle_id: battle.id,
-        entry_fee: Number(battle.amount || 0),
-        prize: Number(battle.winAmount || 0),
-        status: result,
-        timestamp: Date.now(),
-        time: Date.now(),
-        creatorPhone: battle.creatorPhone || '',
-        joinerPhone: battle.joinerPhone || ''
-      });
-    }
-
     async function setRoomCode(battleId, code) {
       const roomCode = (code || '').trim();
       if (!roomCode) return alert('Enter room code first.');
@@ -513,21 +474,21 @@
         const isJoiner = battle.joinerPhone === phone;
         if (!isCreator && !isJoiner) return;
         battle.status = 'completed';
+        battle.result_status = 'auto_lost';
         battle.loserPhone = phone;
         battle.winnerPhone = isCreator ? battle.joinerPhone : battle.creatorPhone;
-        battle.resultType = 'lost-declared';
+        battle.resultType = 'lost-auto-settled';
+        battle.settlement_processed = true;
         battle.settledAt = Date.now();
         battle.updatedAt = Date.now();
         return battle;
       });
 
       if (!tx.committed) return alert('Unable to process result.');
-      const data = tx.snapshot.val();
-      const winAmt = Number(data.winAmount || 0);
-      await creditWinning(data.winnerPhone, winAmt);
-      await creditReferralCommission(data.winnerPhone, winAmt);
-      await writeMatchHistoryEntry(data.creatorPhone, data, data.creatorPhone === data.winnerPhone ? 'win' : 'lost');
-      await writeMatchHistoryEntry(data.joinerPhone, data, data.joinerPhone === data.winnerPhone ? 'win' : 'lost');
+      const battle = tx.snapshot.val() || {};
+      const winAmt = computeWinAmount(battle.amount);
+      await creditWinning(battle.winnerPhone, winAmt);
+      alert('Result settled successfully.');
     }
 
     async function uploadToImgBB(file) {
@@ -580,108 +541,6 @@
     }
 
 
-    async function deductPenaltyFromCash(userPhone, amount) {
-      await runTransaction(ref(db, `users/${userPhone}`), (user) => {
-        if (!user) return user;
-        const curr = Number(user.balance || 0);
-        user.balance = Math.max(0, curr - Number(amount || 0));
-        return user;
-      });
-    }
-
-    async function processAdminSettlement(battleId) {
-      const battleRef = ref(db, `battles/${battleId}`);
-      const lockTx = await runTransaction(battleRef, (battle) => {
-        if (!battle || battle.settlement_processed || battle.settlement_processing) return battle;
-        const decision = (battle.result_status || '').toString().toLowerCase();
-        if (!['approved', 'rejected', 'reject'].includes(decision)) return battle;
-        battle.settlement_processing = true;
-        battle.settlement_processing_by = phone;
-        battle.settlement_processing_at = Date.now();
-        return battle;
-      });
-
-      if (!lockTx.committed) return;
-      const battle = lockTx.snapshot.val() || {};
-      const decision = (battle.result_status || '').toString().toLowerCase();
-      const claimBy = battle.win_claim_by || battle.winnerPhone || '';
-      const participants = [battle.creatorPhone, battle.joinerPhone].filter(Boolean);
-      const opposite = participants.find((p) => p !== claimBy) || '';
-
-      let winnerPhone = '';
-      let loserPhone = '';
-      if (decision === 'approved') {
-        winnerPhone = claimBy;
-        loserPhone = opposite;
-      } else {
-        winnerPhone = opposite;
-        loserPhone = claimBy;
-      }
-
-      if (!winnerPhone || !loserPhone) {
-        await update(battleRef, {
-          settlement_processing: false,
-          settlement_error: 'Missing participant mapping for settlement.',
-          updatedAt: Date.now()
-        });
-        return;
-      }
-
-      try {
-        const winAmt = Number(battle.winAmount || 0);
-        await creditWinning(winnerPhone, winAmt);
-        await creditReferralCommission(winnerPhone, winAmt);
-
-        if (decision !== 'approved') {
-          await deductPenaltyFromCash(loserPhone, 50);
-        }
-
-        const finalBattle = {
-          ...battle,
-          winnerPhone,
-          loserPhone,
-          status: 'completed',
-          result_status: decision === 'approved' ? 'approved' : 'rejected',
-          resultType: decision === 'approved' ? 'win-approved-by-admin' : 'win-claim-rejected-by-admin',
-          penalty_applied: decision === 'approved' ? 0 : 50,
-          settlement_processed: true,
-          settlement_processed_at: Date.now(),
-          settlement_processing: false,
-          settledAt: Date.now(),
-          updatedAt: Date.now()
-        };
-
-        const getHistoryStatus = (playerPhone) => {
-          if (playerPhone === winnerPhone) return 'win';
-          if (decision !== 'approved' && playerPhone === claimBy) return 'lost_fake_claim';
-          return 'lost';
-        };
-
-        await writeMatchHistoryEntry(finalBattle.creatorPhone, finalBattle, getHistoryStatus(finalBattle.creatorPhone));
-        await writeMatchHistoryEntry(finalBattle.joinerPhone, finalBattle, getHistoryStatus(finalBattle.joinerPhone));
-
-        await update(battleRef, {
-          winnerPhone,
-          loserPhone,
-          status: 'completed',
-          result_status: decision === 'approved' ? 'approved' : 'rejected',
-          resultType: finalBattle.resultType,
-          penalty_applied: finalBattle.penalty_applied,
-          settlement_processed: true,
-          settlement_processed_at: finalBattle.settlement_processed_at,
-          settlement_processing: false,
-          settledAt: finalBattle.settledAt,
-          updatedAt: finalBattle.updatedAt
-        });
-      } catch (error) {
-        await update(battleRef, {
-          settlement_error: error?.message || 'Settlement failed',
-          settlement_processing: false,
-          updatedAt: Date.now()
-        });
-      }
-    }
-
     function renderOpenBattles(data) {
       const list = Object.values(data || {}).filter((b) => b?.status === 'open').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       if (!list.length) {
@@ -701,125 +560,4 @@
             <div class="row" style="margin-top:10px;">
               ${mine
                 ? `<button class="btn-danger btn full" data-action="cancel" data-id="${b.id}" type="button">Cancel (Refund to Cash)</button>`
-                : `<button class="btn btn-gold full" data-action="join" data-id="${b.id}" type="button">Join Battle</button>`}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function battleControls(b) {
-      const meCreator = b.creatorPhone === phone;
-      const meJoiner = b.joinerPhone === phone;
-      const meParticipant = meCreator || meJoiner;
-      if (!meParticipant) return '';
-
-      const roomCode = b.room_code || b.roomCode || '';
-      const roomLocked = Boolean(roomCode);
-      const roomInput = meCreator
-        ? `<div class="row" style="margin-top:8px;">
-            <input class="input" id="room-${b.id}" placeholder="Enter Room Code" value="${roomCode}" ${roomLocked ? 'disabled' : ''} />
-            <button class="btn btn-gold" data-action="set-room" data-id="${b.id}" type="button" ${roomLocked ? 'disabled' : ''}>${roomLocked ? 'LOCKED' : 'SET'}</button>
-           </div>
-           ${roomLocked ? '<div class="small muted" style="margin-top:6px;">Room code locked. It can only be set once.</div>' : ''}`
-        : (roomCode ? `<div class="room-code">${roomCode}</div>` : '<div class="small muted" style="margin-top:8px;">Waiting for creator to set room code...</div>');
-
-      const actionDisplay = roomCode ? 'flex' : 'none';
-      return `
-        ${roomInput}
-        <div class="row" style="margin-top:10px;display:${actionDisplay};">
-          <button class="btn btn-win full" data-action="i-win" data-id="${b.id}" type="button">I WIN</button>
-          <button class="btn btn-danger full" data-action="i-lost" data-id="${b.id}" type="button">I LOST</button>
-        </div>
-      `;
-    }
-
-    function renderRunningBattles(data) {
-      const completedStatuses = ['completed', 'win', 'lost'];
-      const list = Object.values(data || {})
-        .filter((b) => [b.creatorPhone, b.joinerPhone].includes(phone) && ['playing', 'pending', 'dispute'].includes(b.status) && !completedStatuses.includes(b.status))
-        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-
-      if (!list.length) {
-        runningBattles.innerHTML = '<div class="card muted small">No running battles.</div>';
-        return;
-      }
-
-      runningBattles.innerHTML = list.map((b) => `
-        <div class="card" id="running-${b.id}" data-battle-id="${b.id}">
-          <div class="row space-between">
-            <strong>Battle ₹${b.amount}</strong>
-            <span class="status ${statusClass(b.status)}">${b.status.toUpperCase()}</span>
-          </div>
-          <div class="small muted">Win: ${fmt(b.winAmount)} • Creator: ${b.creatorPhone} • Joiner: ${b.joinerPhone || '-'}</div>
-          ${b.winnerPhone ? `<div class="small" style="margin-top:6px;color:var(--ok);">Winner: ${b.winnerPhone}</div>` : ''}
-          ${battleControls(b)}
-        </div>
-      `).join('');
-    }
-
-    createBattleBtn.addEventListener('click', createBattle);
-
-    rulesBtn.addEventListener('click', () => showModal(rulesModal));
-    overlay.addEventListener('click', () => {
-      document.querySelectorAll('.modal.show').forEach((m) => m.classList.remove('show'));
-      overlay.classList.remove('show');
-    });
-    document.querySelectorAll('[data-close-modal]').forEach((btn) => {
-      btn.addEventListener('click', () => closeModal(document.getElementById(btn.dataset.closeModal)));
-    });
-
-    submitWinBtn.addEventListener('click', declareWinWithScreenshot);
-
-    document.body.addEventListener('click', async (event) => {
-      const btn = event.target.closest('button[data-action]');
-      if (!btn) return;
-      const action = btn.dataset.action;
-      const id = btn.dataset.id;
-      try {
-        if (action === 'cancel') await cancelOpenBattle(id);
-        if (action === 'join') await joinBattle(id);
-        if (action === 'i-lost') await declareLost(id);
-        if (action === 'i-win') {
-          pendingWinBattleId = id;
-          showModal(winModal);
-        }
-        if (action === 'set-room') {
-          const roomInput = document.getElementById(`room-${id}`);
-          await setRoomCode(id, roomInput?.value || '');
-        }
-      } catch (error) {
-        alert(error.message || 'Action failed.');
-      }
-    });
-
-    onValue(ref(db, `users/${phone}`), (snap) => {
-      myUser = snap.val() || {};
-      cashAmount.textContent = fmt(myUser.balance);
-      winAmount.textContent = fmt(myUser.win_balance);
-    });
-
-    onValue(ref(db, 'app_stats/online_players'), (snap) => {
-      const val = snap.val();
-      document.getElementById('onlinePlayers').textContent = val ? `${val}+` : '500+';
-    });
-
-    onValue(ref(db, 'battles'), (snap) => {
-      const battles = snap.val() || {};
-      Object.values(battles).forEach((battle) => {
-        if (!battle?.id) return;
-        const decision = (battle.result_status || '').toString().toLowerCase();
-        if (['approved', 'rejected', 'reject'].includes(decision) && !battle.settlement_processed) {
-          processAdminSettlement(battle.id);
-        }
-        if (['completed', 'win', 'lost'].includes(battle.status)) {
-          const node = document.getElementById(`running-${battle.id}`);
-          if (node) node.remove();
-        }
-      });
-      renderOpenBattles(battles);
-      renderRunningBattles(battles);
-    });
-  </script>
-</body>
-</html>
+    
