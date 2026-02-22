@@ -232,7 +232,7 @@
   <section id="rulesModal" class="modal" role="dialog" aria-modal="true">
     <h3 class="title">Battle Rules</h3>
     <ul class="muted small">
-       <li>Agar popular code aye toh aap screen recording karke game left kare</li>
+     <li>Agar popular code aye toh aap screen recording karke game left kare</li>
       <li>Agar samne wale theme Se khel raha he apko nahi khelna toh opponent ki 2 goti khulne se phele game screen recording karke game left kare</li>
       <li>Fake Screenshot Dalne Par 50 Rupay Penalty Lagegi</li>
       <li>withdrawl within 15 minutes me diya jata hai</li>
@@ -492,14 +492,18 @@
     async function setRoomCode(battleId, code) {
       const roomCode = (code || '').trim();
       if (!roomCode) return alert('Enter room code first.');
-      await runTransaction(ref(db, `battles/${battleId}`), (battle) => {
+      const tx = await runTransaction(ref(db, `battles/${battleId}`), (battle) => {
         if (!battle || battle.status !== 'playing' || battle.creatorPhone !== phone) return battle;
+        if ((battle.room_code || battle.roomCode || '').toString().trim()) return battle;
         battle.roomCode = roomCode;
         battle.room_code = roomCode;
         battle.roomCodeAt = Date.now();
         battle.updatedAt = Date.now();
         return battle;
       });
+      if (!tx.committed || !(tx.snapshot?.val()?.room_code || tx.snapshot?.val()?.roomCode)) {
+        alert('Room code is already locked and cannot be changed.');
+      }
     }
 
     async function declareLost(battleId) {
@@ -549,27 +553,24 @@
           if (!battle || battle.status !== 'playing' || battle.settledAt) return;
           const isParticipant = [battle.creatorPhone, battle.joinerPhone].includes(phone);
           if (!isParticipant) return;
-          battle.status = 'completed';
+          battle.status = 'dispute';
+          battle.result_status = 'pending';
           battle.win_claim_by = phone;
+          battle.screenshot_url = url;
           battle.win_ss = battle.win_ss || {};
           battle.win_ss[phone] = url;
           battle.winnerPhone = phone;
           battle.loserPhone = battle.creatorPhone === phone ? battle.joinerPhone : battle.creatorPhone;
-          battle.resultType = 'win-declared';
-          battle.settledAt = Date.now();
+          battle.resultType = 'win-claim-pending-admin';
+          battle.claimedAt = Date.now();
           battle.updatedAt = Date.now();
           return battle;
         });
 
-        if (!tx.committed) throw new Error('Unable to submit win result.');
+        if (!tx.committed) throw new Error('Unable to submit win claim.');
 
-        const resultBattle = tx.snapshot.val();
-        const winAmt = Number(resultBattle.winAmount || 0);
-        await creditWinning(resultBattle.winnerPhone, winAmt);
-        await creditReferralCommission(resultBattle.winnerPhone, winAmt);
-        await writeMatchHistoryEntry(resultBattle.creatorPhone, resultBattle, resultBattle.creatorPhone === resultBattle.winnerPhone ? 'win' : 'lost');
-        await writeMatchHistoryEntry(resultBattle.joinerPhone, resultBattle, resultBattle.joinerPhone === resultBattle.winnerPhone ? 'win' : 'lost');
         closeModal(winModal);
+        alert('Claim submitted. Result is pending admin approval.');
         pendingWinBattleId = null;
         winFile.value = '';
       } catch (error) {
@@ -612,11 +613,13 @@
       if (!meParticipant) return '';
 
       const roomCode = b.room_code || b.roomCode || '';
+      const roomLocked = Boolean(roomCode);
       const roomInput = meCreator
         ? `<div class="row" style="margin-top:8px;">
-            <input class="input" id="room-${b.id}" placeholder="Enter Room Code" value="${roomCode}" />
-            <button class="btn btn-gold" data-action="set-room" data-id="${b.id}" type="button">SET</button>
-           </div>`
+            <input class="input" id="room-${b.id}" placeholder="Enter Room Code" value="${roomCode}" ${roomLocked ? 'disabled' : ''} />
+            <button class="btn btn-gold" data-action="set-room" data-id="${b.id}" type="button" ${roomLocked ? 'disabled' : ''}>${roomLocked ? 'LOCKED' : 'SET'}</button>
+           </div>
+           ${roomLocked ? '<div class="small muted" style="margin-top:6px;">Room code locked. It can only be set once.</div>' : ''}`
         : (roomCode ? `<div class="room-code">${roomCode}</div>` : '<div class="small muted" style="margin-top:8px;">Waiting for creator to set room code...</div>');
 
       const actionDisplay = roomCode ? 'flex' : 'none';
