@@ -251,6 +251,15 @@
   <section class="modal" id="withdrawModal">
     <h3 style="margin:0;">Withdraw Winnings</h3>
     <p class="muted" style="font-size:12px;">Minimum withdrawal: ₹100. Amount is debited only from winnings wallet.</p>
+
+    <label class="muted" style="font-size:12px; display:block; margin-top:8px;">Select Method</label>
+    <div class="row" style="margin-top:6px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="radio" name="withdrawMethod" value="UPI" checked /> Withdraw to UPI</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="radio" name="withdrawMethod" value="Bank" /> Withdraw to Bank</label>
+    </div>
+
+    <div id="withdrawMethodInfo" class="item" style="margin-top:10px; font-size:12px;"></div>
+
     <label class="muted" style="font-size:12px;">Amount</label>
     <input class="input" id="withdrawAmount" type="number" min="100" placeholder="Enter withdraw amount" />
     <div class="row">
@@ -298,6 +307,7 @@
     const adminUpi = document.getElementById('adminUpi');
     const submitDepositBtn = document.getElementById('submitDepositBtn');
     const submitWithdrawBtn = document.getElementById('submitWithdrawBtn');
+    const withdrawMethodInfo = document.getElementById('withdrawMethodInfo');
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const totalRefers = document.getElementById('totalRefers');
@@ -410,13 +420,58 @@
       }
     };
 
+    const getSelectedWithdrawMethod = () => document.querySelector('input[name="withdrawMethod"]:checked')?.value || 'UPI';
+
+    const hasPaymentDetails = (method) => {
+      if (method === 'UPI') return Boolean((userData?.upi_id || '').trim());
+      return Boolean((userData?.bank_acc || '').trim() && (userData?.bank_ifsc || '').trim() && (userData?.full_name || '').trim());
+    };
+
+    const getPaymentDetails = (method) => {
+      if (method === 'UPI') return (userData?.upi_id || '').trim();
+      return {
+        acc: (userData?.bank_acc || '').trim(),
+        ifsc: (userData?.bank_ifsc || '').trim(),
+        name: (userData?.full_name || '').trim()
+      };
+    };
+
+    const renderWithdrawMethodInfo = () => {
+      const method = getSelectedWithdrawMethod();
+      if (method === 'UPI') {
+        const upi = (userData?.upi_id || '').trim();
+        withdrawMethodInfo.innerHTML = upi
+          ? `<strong>UPI:</strong> ${upi}`
+          : '<span class="muted">UPI ID not found in profile. Please update profile to continue.</span>';
+        return;
+      }
+
+      const name = (userData?.full_name || '').trim();
+      const acc = (userData?.bank_acc || '').trim();
+      const ifsc = (userData?.bank_ifsc || '').trim();
+      if (name && acc && ifsc) {
+        withdrawMethodInfo.innerHTML = `<strong>Name:</strong> ${name}<br><strong>A/C:</strong> ${acc}<br><strong>IFSC:</strong> ${ifsc}`;
+      } else {
+        withdrawMethodInfo.innerHTML = '<span class="muted">Bank details not found in profile. Please update profile to continue.</span>';
+      }
+    };
+
     const submitWithdraw = async () => {
       const amount = Number(document.getElementById('withdrawAmount').value);
+      const method = getSelectedWithdrawMethod();
+
       if (!userData || userData.kyc_status !== 'verified') {
-        alert('KYC Required');
+        alert('Please complete KYC first!');
         window.location.href = 'profile.html';
         return;
       }
+
+      if (!hasPaymentDetails(method)) {
+        alert('Please save your selected payment method details in profile first.');
+        window.location.href = 'profile.html';
+        return;
+      }
+
       if (!amount || amount < 100) return alert('Minimum withdrawal is ₹100.');
       if (Number(userData.win_balance || 0) < amount) return alert('Insufficient winnings balance.');
 
@@ -429,6 +484,8 @@
           id: reqRef.key,
           phone: currentPhone,
           amount,
+          method,
+          payment_details: getPaymentDetails(method),
           status: 'pending',
           from_wallet: 'win_balance',
           time: Date.now()
@@ -449,6 +506,7 @@
       cashBal.textContent = fmt(userData.balance);
       winBal.textContent = fmt(userData.win_balance);
       referralWallet.textContent = fmt(userData.referral_balance || 0);
+      renderWithdrawMethodInfo();
     });
 
     onValue(ref(db, `referrals/${phone}`), (snap) => {
@@ -462,7 +520,16 @@
     await loadHistory();
 
     addCashBtn.addEventListener('click', () => showModal(depositModal));
-    withdrawBtn.addEventListener('click', () => showModal(withdrawModal));
+    withdrawBtn.addEventListener('click', () => {
+      const method = getSelectedWithdrawMethod();
+      if (!hasPaymentDetails(method)) {
+        alert('Please save your payment details in profile first.');
+        window.location.href = 'profile.html';
+        return;
+      }
+      renderWithdrawMethodInfo();
+      showModal(withdrawModal);
+    });
     submitDepositBtn.addEventListener('click', submitDeposit);
     submitWithdrawBtn.addEventListener('click', submitWithdraw);
     withdrawReferralBtn.addEventListener('click', async () => {
@@ -490,6 +557,10 @@
       } finally {
         withdrawReferralBtn.disabled = false;
       }
+    });
+
+    document.querySelectorAll('input[name="withdrawMethod"]').forEach((radio) => {
+      radio.addEventListener('change', renderWithdrawMethodInfo);
     });
 
     copyUpiBtn.addEventListener('click', async () => {
