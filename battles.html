@@ -378,17 +378,42 @@
 // Ye function 2% commission calculate karke bhejega
 async function processReferralCommission(winnerPhone, winAmount) {
   try {
+    // 1. Winner ki profile se uske Referrer ka number nikalo
     const userSnap = await get(ref(db, `users/${winnerPhone}`));
     const referrerPhone = userSnap.val()?.referredBy;
 
     if (referrerPhone) {
-      const commission = Math.round(winAmount * 0.02); // 2% ka hisaab
+      const commission = Math.round(winAmount * 0.02); // 2% Commission
+      
       if (commission > 0) {
-        await creditCash(referrerPhone, commission); // Referrer ko paisa bhejo
-        console.log("Referral Commission Sent: ₹" + commission);
+        const referrerRef = ref(db, `users/${referrerPhone}`);
+        
+        // 2. Transaction chalao taki Wallet aur Total Earnings dono update hon
+        await runTransaction(referrerRef, (user) => {
+          if (user) {
+            // Referral Wallet mein paisa dalo
+            user.referral_balance = (user.referral_balance || 0) + commission;
+            // Lifetime kitna kamaya uska record rakho
+            user.referral_earnings_total = (user.referral_earnings_total || 0) + commission;
+          }
+          return user;
+        });
+
+        // 3. Referral History mein ek entry dalo (Admin ke dekhne ke liye)
+        const historyRef = push(ref(db, `referral_payouts/${referrerPhone}`));
+        await set(historyRef, {
+          fromPlayer: winnerPhone,
+          commissionAmount: commission,
+          gameWin: winAmount,
+          time: Date.now()
+        });
+
+        console.log(`Success: ₹${commission} commission sent to ${referrerPhone}`);
       }
     }
-  } catch (err) { console.error(err); }
+  } catch (error) {
+    console.error("Commission Error:", error);
+  }
 }
     async function ensureUserRecord() {
       const userRef = ref(db, `users/${phone}`);
