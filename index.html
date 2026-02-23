@@ -209,14 +209,6 @@
 
   <script type="module">
     
-       (function captureReferralFromURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const refCode = urlParams.get('ref');
-      if (refCode) {
-        localStorage.setItem('sr_ludo_pending_referral', refCode.trim());
-        console.log("Referral Code Captured:", refCode);
-      }
-    })();
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getDatabase, ref, get, set, update, onValue, query, limitToLast } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
     
