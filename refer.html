@@ -57,11 +57,31 @@
     .rules { margin: 20px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 16px; }
     .rules h4 { margin-top: 0; color: var(--gold-2); }
     .rules li { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .kyc-notice {
+      margin: 20px;
+      padding: 12px 15px;
+      background: rgba(255, 61, 77, 0.1); /* Halka laal background */
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .kyc-notice span {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ff9da5; /* Light Red/Pinkish for highlight */
+    }
+    .kyc-icon { font-size: 18px; }
   </style>
 </head>
 <body>
 
   <div class="app">
+    <div class="kyc-notice">
+      <div class="kyc-icon">⚠️</div>
+      <span>Refer And Earn Ke Liye Aapko KYC Karna Jaruri Hai</span>
+    </div>
     <div class="header">
       <a href="index.html" class="back-btn">←</a>
       <h3 style="margin:0;">Refer & Earn</h3>
