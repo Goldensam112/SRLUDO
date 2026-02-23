@@ -223,6 +223,16 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    // ✅ 1. URL se referral code pakadne ka logic
+(function captureReferralFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const refCode = urlParams.get('ref');
+  if (refCode) {
+    // Isse code 'pending_referral' mein save ho jayega
+    localStorage.setItem('sr_ludo_pending_referral', refCode.trim());
+    console.log("Referral captured from link:", refCode);
+  }
+})();
     const IMGBB_API_KEY = "ca44783bda6779b5e3913432bd243b30";
 
     const loginScreen = document.getElementById('loginScreen');
@@ -310,7 +320,17 @@
         const u = s.val() || {};
         cashAmount.textContent = `₹${u.balance || 0}`;
         winAmount.textContent = `₹${u.win_balance || 0}`;
-        document.getElementById('myReferralLink').textContent = phone;
+// Line 245 के आसपास इसे बदलें:
+onValue(userRef, (s) => {
+  const u = s.val() || {};
+  cashAmount.textContent = `₹${u.balance || 0}`;
+  winAmount.textContent = `₹${u.win_balance || 0}`;
+  
+  // ✅ Pura link dikhao na ki sirf phone number
+  const cleanCode = phone.replace(/\D/g, '').slice(-6); // Profile se match karne ke liye
+  const myLink = `${window.location.origin}${window.location.pathname}?ref=${cleanCode}`;
+  document.getElementById('myReferralLink').textContent = myLink;
+});
       });
     };
 
