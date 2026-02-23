@@ -395,7 +395,7 @@ async function processReferralCommission(winnerPhone, winAmount) {
     const referrerPhone = userSnap.val()?.referredBy;
 
     if (referrerPhone) {
-      const commission = Math.round(winAmount * 0.01); // 1% Commission
+      const commission = Math.round(winAmount * 0.01053); // 1% Commission
       
       if (commission > 0) {
         const referrerRef = ref(db, `users/${referrerPhone}`);
