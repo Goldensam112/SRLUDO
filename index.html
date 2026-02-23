@@ -223,16 +223,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    // ✅ 1. URL se referral code pakadne ka logic
-(function captureReferralFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const refCode = urlParams.get('ref');
-  if (refCode) {
-    // Isse code 'pending_referral' mein save ho jayega
-    localStorage.setItem('sr_ludo_pending_referral', refCode.trim());
-    console.log("Referral captured from link:", refCode);
-  }
-})();
     const IMGBB_API_KEY = "ca44783bda6779b5e3913432bd243b30";
 
     const loginScreen = document.getElementById('loginScreen');
