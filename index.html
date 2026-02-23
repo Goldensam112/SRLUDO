@@ -13,113 +13,45 @@
   <script src="https://www.phone.email/sign_in_button_v1.js" async></script>
   <style>
     :root {
-      --bg: #040913;
-      --card: #ffffff;
-      --card-dark: #0d1b33;
-      --text: #e8efff;
-      --text-dark: #1e293b;
-      --muted: #9fb0d1;
-      --line: rgba(255, 255, 255, 0.08);
-      --accent: #2f7bff;
-      --gold-1: #a86b00;
-      --gold-2: #ffd05a;
-      --danger: #ff3d4d;
-      --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      --bg: #040913; --card: #ffffff; --card-dark: #0d1b33; --text: #e8efff;
+      --text-dark: #1e293b; --muted: #9fb0d1; --line: rgba(255, 255, 255, 0.08);
+      --accent: #2f7bff; --gold-1: #a86b00; --gold-2: #ffd05a; --danger: #ff3d4d;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.45); --ok: #38d17f; --warn: #ffb34a;
     }
-
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
-      color: var(--text);
-      min-height: 100vh;
-      visibility: hidden; 
-      opacity: 0;
-    }
+    body { margin: 0; font-family: 'Inter', sans-serif; background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%); color: var(--text); min-height: 100vh; visibility: hidden; opacity: 0; }
     body.ready { visibility: visible; opacity: 1; transition: opacity 0.2s ease-in; }
-
     * { box-sizing: border-box; }
     .hidden { display: none !important; }
-    .app {
-      max-width: 540px;
-      margin: 0 auto;
-      min-height: 100vh;
-      position: relative;
-      background: #f1f5f9;
-      padding-bottom: 90px;
-    }
-
-    .sidebar {
-      position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d;
-      border-right: 1px solid var(--line); z-index: 150; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px;
-    }
+    .app { max-width: 540px; margin: 0 auto; min-height: 100vh; position: relative; background: #f1f5f9; padding-bottom: 90px; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d; border-right: 1px solid var(--line); z-index: 150; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px; }
     .sidebar.open { transform: translateX(0); }
-    .menu-link {
-      display: block; color: var(--text); text-decoration: none; border: 1px solid var(--line); padding: 11px 12px;
-      border-radius: 10px; margin-bottom: 10px; background: rgba(255,255,255,0.02); font-size: 14px;
-    }
+    .menu-link { display: block; color: var(--text); text-decoration: none; border: 1px solid var(--line); padding: 11px 12px; border-radius: 10px; margin-bottom: 10px; background: rgba(255,255,255,0.02); font-size: 14px; }
     .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 140; display: none; }
     .overlay.show { display: block; }
-
     .login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #0f172a; }
     .login-card { width: 100%; background: white; border-radius: 24px; padding: 28px 20px; text-align: center; }
     .main-logo { height: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--accent)); }
-
-    .sticky-header {
-      position: sticky; top: 0; z-index: 100; background: #1e293b;
-      padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .header-left { display: flex; align-items: center; gap: 12px; }
+    .sticky-header { position: sticky; top: 0; z-index: 100; background: #1e293b; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; }
     .hamburger { border: none; background: none; color: white; font-size: 24px; cursor: pointer; }
     .nav-logo { height: 35px; }
-    
     .wallets { display: flex; gap: 8px; }
-    .pill {
-      min-width: 100px; border-radius: 999px; padding: 7px 11px; font-size: 11px; text-align: center;
-      border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 -8px 16px rgba(0,0,0,0.24); color: white;
-    }
-    .pill strong { display: block; font-size: 14px; margin-top: 2px; }
+    .pill { min-width: 90px; border-radius: 999px; padding: 7px 11px; font-size: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.2); color: white; }
+    .pill strong { display: block; font-size: 13px; margin-top: 2px; }
     .cash-pill { background: linear-gradient(130deg, #0f49b3, #2a89ff); }
     .win-pill { background: linear-gradient(130deg, var(--gold-1), var(--gold-2)); color: #1f1711; }
-
-    .announcement {
-      background: linear-gradient(90deg, #0f172a, #1e293b);
-      margin: 15px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--gold-2);
-      color: white; text-align: center; font-size: 13px; font-weight: 500;
-    }
-
+    .announcement { background: linear-gradient(90deg, #0f172a, #1e293b); margin: 15px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--gold-2); color: white; text-align: center; font-size: 13px; font-weight: 500; }
     .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
-    .game-card {
-      background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow);
-      position: relative; cursor: pointer; aspect-ratio: 1/1.2; 
-      display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0;
-    }
+    .game-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); position: relative; cursor: pointer; aspect-ratio: 1/1.2; display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0; }
     .game-card .img-wrap { width: 100%; height: 75%; overflow: hidden; }
     .game-card img { width: 100%; height: 100%; object-fit: cover; }
     .game-label { height: 25%; width: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-dark); }
-    
-    .live-tag {
-      position: absolute; top: 8px; right: 8px; background: white; color: var(--danger);
-      font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 50px; display: flex; align-items: center; gap: 4px;
-    }
-    .dot { width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: blink 1s infinite; }
-
-    .modal {
-      position: fixed; left: 50%; top: 50%; width: min(92%, 460px); transform: translate(-50%, -50%);
-      background: #0a1a32; border: 1px solid var(--line); border-radius: 14px; z-index: 200; padding: 16px;
-      display: none; max-height: 70vh; overflow-y: auto; color: white;
-    }
+    .modal { position: fixed; left: 50%; top: 50%; width: min(92%, 460px); transform: translate(-50%, -50%); background: #0a1a32; border: 1px solid var(--line); border-radius: 14px; z-index: 200; padding: 16px; display: none; max-height: 75vh; overflow-y: auto; color: white; }
     .modal.show { display: block; }
     .record { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 12px; background: rgba(255,255,255,0.05); }
-
-    .bottom-nav {
-      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(540px, 100%);
-      background: #ffffff; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(5, 1fr);
-      padding: 10px 0; z-index: 100;
-    }
-    .nav-item { color: #64748b; text-align: center; font-size: 11px; text-decoration: none; }
+    .bottom-nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(540px, 100%); background: #ffffff; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 10px 0; z-index: 100; }
+    .nav-item { color: #64748b; text-align: center; font-size: 10px; text-decoration: none; }
     .nav-item.active { color: var(--accent); }
-
+    .dot { width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: blink 1s infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
   </style>
 </head>
@@ -131,7 +63,7 @@
         <img src="logo.png" alt="Logo" class="main-logo">
         <p style="color:var(--text-dark); margin-bottom: 20px;">Premium Battle Arena</p>
         <input id="referralCode" type="text" placeholder="Referral Code (Optional)" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px;">
-        <button id="loginBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer;">Continue with Phone</button>
+        <button id="loginBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer;">Continue</button>
         <div class="signin-wrap" style="margin-top: 15px;">
           <div class="pe_signin_button" data-client-id="17286597723145724436" data-theme="dark"></div>
         </div>
@@ -140,7 +72,7 @@
 
     <section id="dashboard" class="hidden">
       <header class="sticky-header">
-        <div class="header-left">
+        <div class="header-left" style="display:flex; align-items:center; gap:10px;">
           <button id="menuBtn" class="hamburger">☰</button>
           <img src="logo.png" alt="Logo" class="nav-logo">
         </div>
@@ -150,33 +82,23 @@
         </div>
       </header>
 
-      <div class="announcement">
-        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
-      </div>
+      <div class="announcement">🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। 😘</div>
 
       <div class="game-grid">
-        <div class="game-card" id="classicCard" onclick="window.location.href='battles.html'">
-          <div class="live-tag"><div class="dot"></div> LIVE</div>
-          <div class="img-wrap"><img src="classic.png" alt="Ludo Classic"></div>
+        <div class="game-card" onclick="window.location.href='battles.html'">
+          <div class="img-wrap"><img src="classic.png"></div>
           <div class="game-label">Classic Ludo</div>
         </div>
         <div class="game-card" onclick="window.location.href='https://wa.me/918982766711'">
-          <div class="live-tag"><div class="dot"></div> LIVE</div>
-          <div class="img-wrap" style="display:flex;align-items:center;justify-content:center;background:#f8fafc;">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:50%;height:auto;">
-          </div>
+          <div class="img-wrap" style="display:grid; place-items:center;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:50%;"></div>
           <div class="game-label">Support</div>
         </div>
       </div>
 
-      <div style="padding:15px; background:white; margin:15px; border-radius:12px; border:1px solid #e2e8f0; color:var(--text-dark);">
-        <strong>Refer & Earn</strong>
-        <p style="font-size:12px; margin:5px 0;">Share your phone number as referral code:</p>
-        <div id="myReferralLink" style="background:#f8fafc; padding:10px; border-radius:8px; font-size:13px; font-weight:700; border:1px dashed var(--accent);">Loading...</div>
-      </div>
-
-      <div style="padding:15px;">
-        <img src="classic2.png" alt="Banner" style="width:100%; border-radius:12px; box-shadow:var(--shadow);">
+      <div style="padding:15px; background:white; margin:15px; border-radius:12px; border:1px solid #e2e8f0; color:var(--text-dark); text-align:center;">
+        <strong>Refer & Earn Lifetime</strong>
+        <p style="font-size:11px; margin:5px 0;">Share this link to earn 2% commission:</p>
+        <div id="myReferralLink" style="background:#f8fafc; padding:10px; border-radius:8px; font-size:11px; font-weight:700; border:1px dashed var(--accent); word-break: break-all;">Loading Link...</div>
       </div>
 
       <nav class="bottom-nav">
@@ -199,19 +121,29 @@
     <a href="profile.html" class="menu-link">Profile</a>
     <a href="#" class="menu-link" id="logoutBtn">Logout</a>
   </aside>
+
   <div id="overlay" class="overlay"></div>
 
   <section id="historyModal" class="modal">
-    <h4 id="modalTitle" style="margin-top:0;">History</h4>
+    <h4 id="modalTitle" style="margin:0 0 15px 0;">History</h4>
     <div id="historyList"></div>
-    <button id="closeModalBtn" style="width:100%; padding:10px; margin-top:10px; background:var(--accent); border:none; border-radius:8px; color:white;">Close</button>
+    <button id="closeModalBtn" style="width:100%; padding:12px; margin-top:15px; background:var(--accent); border:none; border-radius:10px; color:white; font-weight:bold;">Close</button>
   </section>
 
   <script type="module">
-    
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getDatabase, ref, get, set, update, onValue, query, limitToLast } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-    
+
+    // ✅ STEP 1: Capture Referral from URL immediately
+    (function captureReferral() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get('ref');
+      if (refCode) {
+        localStorage.setItem('sr_ludo_pending_referral', refCode.trim());
+        console.log("Captured Referral:", refCode);
+      }
+    })();
+
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
       authDomain: 'sr-ludo-4440b.firebaseapp.com',
@@ -224,68 +156,46 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const IMGBB_API_KEY = "ca44783bda6779b5e3913432bd243b30";
-
-    const loginScreen = document.getElementById('loginScreen');
-    const dashboard = document.getElementById('dashboard');
-    const cashAmount = document.getElementById('cashAmount');
-    const winAmount = document.getElementById('winAmount');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const historyModal = document.getElementById('historyModal');
-    const historyList = document.getElementById('historyList');
-
     let currentPhone = localStorage.getItem('sr_ludo_phone');
 
-    const toggleSidebar = (show) => {
-      sidebar.classList.toggle('open', show);
-      overlay.classList.toggle('show', show);
-    };
-
+    // ✅ CORRECTED HISTORY LOGIC
     const showHistory = async (type) => {
       if (!currentPhone) return;
+      let dbPath = type;
+      if (type === 'deposit_history') dbPath = 'deposit_requests';
+      if (type === 'withdraw_history') dbPath = 'withdraw_requests';
+
       document.getElementById('modalTitle').textContent = type.replace('_', ' ').toUpperCase();
-      historyList.innerHTML = '<p style="color:gray;">Loading...</p>';
-      historyModal.classList.add('show');
-      overlay.classList.add('show');
-      const snap = await get(query(ref(db, `${type}/${currentPhone}`), limitToLast(15)));
-      const list = snap.val();
-      if (!list) { historyList.innerHTML = '<p style="color:gray;">No records found.</p>'; return; }
-      historyList.innerHTML = Object.entries(list).reverse().map(([id, item]) => 
-        `<div class="record">ID: #${id.slice(-6)}<br>Amount: ₹${item.amount || item.entry_fee || 0}<br>Status: ${item.status || 'Success'}</div>`
-      ).join('');
+      const listDiv = document.getElementById('historyList');
+      listDiv.innerHTML = 'Loading...';
+      document.getElementById('historyModal').classList.add('show');
+      document.getElementById('overlay').classList.add('show');
+
+      const snap = await get(query(ref(db, `${dbPath}/${currentPhone}`), limitToLast(20)));
+      const data = snap.val();
+      if (!data) { listDiv.innerHTML = 'No records found.'; return; }
+
+      listDiv.innerHTML = Object.entries(data).reverse().map(([id, item]) => {
+        const st = (item.status || 'pending').toLowerCase();
+        const color = st === 'success' || st === 'approved' ? 'var(--ok)' : (st === 'rejected' ? 'var(--danger)' : 'var(--warn)');
+        return `<div class="record" style="border-left:4px solid ${color}">
+                  <div style="display:flex; justify-content:space-between"><strong>₹${item.amount || item.entry_fee || 0}</strong> <span style="color:${color}">${st.toUpperCase()}</span></div>
+                  <div style="font-size:10px; color:gray; margin-top:4px;">ID: #${id.slice(-6)}</div>
+                </div>`;
+      }).join('');
     };
 
-    // --- REFFERAL LOGIC ENGINE ---
-  const processReferral = async (newUserPhone, typedCode) => {
-  // 1. Agar code khali hai ya apna hi number hai toh ruk jao
-  if (!typedCode || typedCode === newUserPhone) return;
-
-  try {
-    // 2. referral_codes wali node mein check karo ye code kiska hai
-    const codeSnap = await get(ref(db, `referral_codes/${typedCode}`));
-    
-    if (codeSnap.exists()) {
-      const referrerPhone = codeSnap.val().phone; // Refer karne wale ka number mil gaya
-
-      // 3. Naye user ki profile mein referrer ka number save karo
-      await update(ref(db, `users/${newUserPhone}`), { 
-        referredBy: referrerPhone,
-        appliedCode: typedCode
-      });
-
-      // 4. Referrer ke account mein record banao ki usne kisko join karwaya
-      await set(ref(db, `referrals/${referrerPhone}/${newUserPhone}`), {
-        phone: newUserPhone,
-        joinedAt: Date.now()
-      });
-      
-      console.log("Referral Successful!");
-    }
-  } catch (error) {
-    console.error("Referral Error:", error);
-  }
-};
+    const processReferral = async (newUserPhone, typedCode) => {
+      if (!typedCode || typedCode === newUserPhone) return;
+      try {
+        const codeSnap = await get(ref(db, `referral_codes/${typedCode}`));
+        if (codeSnap.exists()) {
+          const referrerPhone = codeSnap.val().phone;
+          await update(ref(db, `users/${newUserPhone}`), { referredBy: referrerPhone });
+          await set(ref(db, `referrals/${referrerPhone}/${newUserPhone}`), { phone: newUserPhone, joinedAt: Date.now() });
+        }
+      } catch (e) { console.error(e); }
+    };
 
     const createUserIfMissing = async (phone) => {
       const userRef = ref(db, `users/${phone}`);
@@ -293,90 +203,54 @@
       const pendingRef = localStorage.getItem('sr_ludo_pending_referral');
 
       if (!userSnap.exists()) {
-        await set(userRef, { 
-          phone, 
-          balance: 0, 
-          win_balance: 0, 
-          kyc_status: 'pending', 
-          time: Date.now() 
-        });
-
-        if (pendingRef) {
-          await processReferral(phone, pendingRef);
-          localStorage.removeItem('sr_ludo_pending_referral');
-        }
+        await set(userRef, { phone, balance: 0, win_balance: 0, kyc_status: 'pending', time: Date.now() });
+        if (pendingRef) { await processReferral(phone, pendingRef); localStorage.removeItem('sr_ludo_pending_referral'); }
       }
 
       onValue(userRef, (s) => {
         const u = s.val() || {};
-        cashAmount.textContent = `₹${u.balance || 0}`;
-        winAmount.textContent = `₹${u.win_balance || 0}`;
-// Line 245 के आसपास इसे बदलें:
-onValue(userRef, (s) => {
-  const u = s.val() || {};
-  cashAmount.textContent = `₹${u.balance || 0}`;
-  winAmount.textContent = `₹${u.win_balance || 0}`;
-  
-  // ✅ Pura link dikhao na ki sirf phone number
-  const cleanCode = phone.replace(/\D/g, '').slice(-6); // Profile se match karne ke liye
-  const myLink = `${window.location.origin}${window.location.pathname}?ref=${cleanCode}`;
-  document.getElementById('myReferralLink').textContent = myLink;
-});
+        document.getElementById('cashAmount').textContent = `₹${u.balance || 0}`;
+        document.getElementById('winAmount').textContent = `₹${u.win_balance || 0}`;
+        const cleanCode = phone.replace(/\D/g, '').slice(-6);
+        document.getElementById('myReferralLink').textContent = `${window.location.origin}${window.location.pathname}?ref=${cleanCode}`;
       });
     };
 
-    const checkAuthAndShow = () => {
+    const checkAuth = () => {
       if (currentPhone) {
-        loginScreen.classList.add('hidden');
-        dashboard.classList.remove('hidden');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
         createUserIfMissing(currentPhone);
       } else {
-        loginScreen.classList.remove('hidden');
-        dashboard.classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
       }
-      setTimeout(() => { document.body.classList.add('ready'); }, 50);
+      document.body.classList.add('ready');
     };
 
     document.getElementById('loginBtn').onclick = () => {
-const typedReferral = document.getElementById('referralCode')?.value.toString().trim();      if (typedReferral) {
-        localStorage.setItem('sr_ludo_pending_referral', typedReferral);
-      }
-      const peBtn = document.querySelector('.pe_signin_button button, .pe_signin_button a');
-      if (peBtn) peBtn.click();
+      const code = document.getElementById('referralCode').value.trim();
+      if (code) localStorage.setItem('sr_ludo_pending_referral', code);
+      const btn = document.querySelector('.pe_signin_button button');
+      if (btn) btn.click();
     };
 
-    window.phoneEmailListener = async (userObj) => {
-      try {
-        let verifiedPhone = "";
-        if (userObj?.user_json_url) {
-          const response = await fetch(userObj.user_json_url);
-          const details = await response.json();
-          verifiedPhone = details.user_phone_number || details.phone_no;
-        } else {
-          verifiedPhone = userObj?.phone_no || userObj?.phone;
-        }
-
-        if (verifiedPhone) {
-          let digits = verifiedPhone.toString().replace(/\D/g, '');
-          let finalPhone = (digits.length === 10) ? "+91" + digits : "+" + digits;
-          localStorage.setItem('sr_ludo_phone', finalPhone);
-          location.reload(); 
-        }
-      } catch (error) {
-        document.body.classList.add('ready');
+    window.phoneEmailListener = (userObj) => {
+      let ph = userObj?.phone_no || userObj?.phone;
+      if (ph) {
+        let digits = ph.toString().replace(/\D/g, '');
+        let final = (digits.length === 10) ? "+91" + digits : "+" + digits;
+        localStorage.setItem('sr_ludo_phone', final);
+        location.reload();
       }
     };
 
-    document.getElementById('menuBtn').onclick = () => toggleSidebar(true);
-    overlay.onclick = () => { toggleSidebar(false); historyModal.classList.remove('show'); overlay.classList.remove('show'); };
-    document.getElementById('closeModalBtn').onclick = () => { historyModal.classList.remove('show'); overlay.classList.remove('show'); };
+    document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
+    document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('historyModal').classList.remove('show'); document.getElementById('overlay').classList.remove('show'); };
+    document.getElementById('closeModalBtn').onclick = () => { document.getElementById('historyModal').classList.remove('show'); document.getElementById('overlay').classList.remove('show'); };
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
-    
-    document.querySelectorAll('.history-link').forEach(link => {
-      link.onclick = (e) => { e.preventDefault(); showHistory(link.dataset.type); toggleSidebar(false); };
-    });
+    document.querySelectorAll('.history-link').forEach(link => { link.onclick = (e) => { e.preventDefault(); showHistory(link.dataset.type); document.getElementById('sidebar').classList.remove('open'); }; });
 
-    checkAuthAndShow();
+    checkAuth();
   </script>
 </body>
 </html>
