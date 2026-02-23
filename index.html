@@ -224,6 +224,17 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    // --- AUTO FILL REFERRAL CODE ---
+const urlParams = new URLSearchParams(window.location.search);
+const refFromURL = urlParams.get('ref');
+
+if (refFromURL) {
+  const referralInput = document.getElementById('referralCode');
+  if (referralInput) {
+    referralInput.value = refFromURL;
+    localStorage.setItem('sr_ludo_pending_referral', refFromURL);
+  }
+}
     const IMGBB_API_KEY = "ca44783bda6779b5e3913432bd243b30";
 
     const loginScreen = document.getElementById('loginScreen');
