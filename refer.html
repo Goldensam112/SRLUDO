@@ -44,6 +44,7 @@
       background: #08162c; border: 1px dashed var(--accent);
       padding: 15px; border-radius: 12px; margin-bottom: 15px;
       font-weight: 600; font-size: 14px; word-break: break-all;
+      color: var(--gold-2);
     }
     .btn {
       width: 100%; padding: 16px; border-radius: 14px; border: 0;
@@ -79,7 +80,7 @@
 
     <div class="share-section">
       <p style="color:var(--muted); font-size: 12px;">Your Personal Referral Link</p>
-      <div class="refer-link-box" id="referLink">Loading Link...</div>
+      <div class="refer-link-box" id="referLink">Generating Link...</div>
       
       <button class="btn btn-whatsapp" id="whatsappBtn">
         Share on WhatsApp
@@ -90,10 +91,10 @@
     <div class="rules">
       <h4>How it works?</h4>
       <ul style="padding-left: 20px;">
-        <li>Share your link with friends.</li>
-        <li>They join using your link (No code entry needed).</li>
-        <li>You get 2% commission from their winning amount directly in your cash wallet.</li>
-        <li>Commission is credited instantly after game completion.</li>
+        <li>Share your unique link with friends.</li>
+        <li>When they join via link, they are automatically linked to you.</li>
+        <li>Earn 2% of their winning amount every time they win a battle.</li>
+        <li>Earnings are credited directly to your cash wallet.</li>
       </ul>
     </div>
   </div>
@@ -118,12 +119,13 @@
 
     if (!phone) { window.location.href = 'index.html'; }
 
-    // Referral Link Generation
-    const cleanPhone = phone.replace(/\D/g, ''); // Extract digits only
-    const myReferLink = `${window.location.origin}/index.html?ref=${cleanPhone}`;
+    // ✅ Match Profile Logic: Using last 6 digits as referral code
+    const referralCode = phone.replace(/\D/g, '').slice(-6) || '000000';
+    const myReferLink = `${window.location.origin}/index.html?ref=${referralCode}`;
+    
     document.getElementById('referLink').innerText = myReferLink;
 
-    // Fetch Stats from Firebase
+    // Realtime Stats from Firebase
     onValue(ref(db, `users/${phone}`), (snap) => {
       const data = snap.val() || {};
       document.getElementById('totalEarnings').innerText = `₹${data.referral_earnings_total || 0}`;
@@ -134,15 +136,17 @@
       document.getElementById('totalReferrals').innerText = Object.keys(refs).length;
     });
 
-    // Share Actions
+    // WhatsApp Action
     document.getElementById('whatsappBtn').onclick = () => {
-      const msg = `*SR LUDO* 🏆\n\nBhai, is link se Ludo khel aur har win pe paisa kama! Payout 15 mins me milta hai. ✅\n\nJoin here: ${myReferLink}`;
+      const msg = `*SR LUDO* 🏆\n\nBhai, is link se Ludo khel aur har win pe paisa kama! Instant Withdrawals. ✅\n\nJoin here: ${myReferLink}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
+    // Copy Action
     document.getElementById('copyBtn').onclick = () => {
-      navigator.clipboard.writeText(myReferLink);
-      alert('Link Copied! Share it with your friends.');
+      navigator.clipboard.writeText(myReferLink).then(() => {
+        alert('Referral link copied!');
+      });
     };
   </script>
 </body>
