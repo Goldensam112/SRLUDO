@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR LUDO | Refer & Earn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #040913; --card: #0d1b33; --card-2: #102340; --text: #e8efff;
+      --muted: #9fb0d1; --line: rgba(255, 255, 255, 0.08); --accent: #2f7bff;
+      --gold-1: #a86b00; --gold-2: #ffd05a; --ok: #38d17f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif;
+      background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
+      color: var(--text); min-height: 100vh;
+    }
+    .app { max-width: 540px; margin: 0 auto; padding-bottom: 40px; }
+    .header { padding: 20px; display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.2); }
+    .back-btn { text-decoration: none; color: white; font-size: 20px; border: 1px solid var(--line); padding: 5px 12px; border-radius: 10px; }
+    
+    .hero-card {
+      margin: 20px; padding: 30px 20px; text-align: center;
+      background: linear-gradient(160deg, var(--card), var(--card-2));
+      border: 1px solid var(--line); border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .hero-card h2 { margin: 10px 0; color: var(--gold-2); font-size: 28px; }
+    .hero-card p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; }
+    .stat-box {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+      padding: 15px; border-radius: 16px; text-align: center;
+    }
+    .stat-box strong { display: block; font-size: 20px; color: var(--ok); margin-top: 5px; }
+
+    .share-section { margin: 25px 20px; text-align: center; }
+    .refer-link-box {
+      background: #08162c; border: 1px dashed var(--accent);
+      padding: 15px; border-radius: 12px; margin-bottom: 15px;
+      font-weight: 600; font-size: 14px; word-break: break-all;
+    }
+    .btn {
+      width: 100%; padding: 16px; border-radius: 14px; border: 0;
+      font-weight: 800; font-size: 16px; cursor: pointer; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-whatsapp { background: #25D366; color: white; }
+    .btn-copy { background: var(--accent); color: white; }
+
+    .rules { margin: 20px; padding: 20px; background: rgba(255,255,255,0.02); border-radius: 16px; }
+    .rules h4 { margin-top: 0; color: var(--gold-2); }
+    .rules li { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <div class="header">
+      <a href="index.html" class="back-btn">←</a>
+      <h3 style="margin:0;">Refer & Earn</h3>
+    </div>
+
+    <div class="hero-card">
+      <div style="font-size: 50px;">🎁</div>
+      <h2>Refer Your Friends</h2>
+      <p>Invite your friends to SR LUDO and get <strong>2% Lifetime Commission</strong> on every game they win!</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">Friends Joined<strong id="totalReferrals">0</strong></div>
+      <div class="stat-box">Total Earned<strong id="totalEarnings">₹0</strong></div>
+    </div>
+
+    <div class="share-section">
+      <p style="color:var(--muted); font-size: 12px;">Your Personal Referral Link</p>
+      <div class="refer-link-box" id="referLink">Loading Link...</div>
+      
+      <button class="btn btn-whatsapp" id="whatsappBtn">
+        Share on WhatsApp
+      </button>
+      <button class="btn btn-copy" id="copyBtn">Copy Link</button>
+    </div>
+
+    <div class="rules">
+      <h4>How it works?</h4>
+      <ul style="padding-left: 20px;">
+        <li>Share your link with friends.</li>
+        <li>They join using your link (No code entry needed).</li>
+        <li>You get 2% commission from their winning amount directly in your cash wallet.</li>
+        <li>Commission is credited instantly after game completion.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
+      authDomain: 'sr-ludo-4440b.firebaseapp.com',
+      databaseURL: 'https://sr-ludo-4440b-default-rtdb.firebaseio.com',
+      projectId: 'sr-ludo-4440b',
+      storageBucket: 'sr-ludo-4440b.firebasestorage.app',
+      messagingSenderId: '1080387235822',
+      appId: '1:1080387235822:web:77faea231641837950e8ff'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const phone = localStorage.getItem('sr_ludo_phone');
+
+    if (!phone) { window.location.href = 'index.html'; }
+
+    // Referral Link Generation
+    const cleanPhone = phone.replace(/\D/g, ''); // Extract digits only
+    const myReferLink = `${window.location.origin}/index.html?ref=${cleanPhone}`;
+    document.getElementById('referLink').innerText = myReferLink;
+
+    // Fetch Stats from Firebase
+    onValue(ref(db, `users/${phone}`), (snap) => {
+      const data = snap.val() || {};
+      document.getElementById('totalEarnings').innerText = `₹${data.referral_earnings_total || 0}`;
+    });
+
+    onValue(ref(db, `referrals/${phone}`), (snap) => {
+      const refs = snap.val() || {};
+      document.getElementById('totalReferrals').innerText = Object.keys(refs).length;
+    });
+
+    // Share Actions
+    document.getElementById('whatsappBtn').onclick = () => {
+      const msg = `*SR LUDO* 🏆\n\nBhai, is link se Ludo khel aur har win pe paisa kama! Payout 15 mins me milta hai. ✅\n\nJoin here: ${myReferLink}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    };
+
+    document.getElementById('copyBtn').onclick = () => {
+      navigator.clipboard.writeText(myReferLink);
+      alert('Link Copied! Share it with your friends.');
+    };
+  </script>
+</body>
+</html>
