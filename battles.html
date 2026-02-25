@@ -573,15 +573,39 @@ async function processReferralCommission(winnerPhone, winAmount) {
         alert('Room code is already locked and cannot be changed.');
       }
     }
-      if (!tx.committed) return alert('Unable to process result.');
-      const battle = tx.snapshot.val() || {};
-      const winAmt = computeWinAmount(battle.amount);
-      await creditWinning(battle.winnerPhone, winAmt);
-      // Winner ko paisa milte hi, uske Referrer ko 2% commission do
-await processReferralCommission(battle.winnerPhone, winAmt);
-      alert('Result settled successfully.');
-    }
+    async function declareLossWithScreenshot() {
+      if (!pendingLossBattleId) return;
+      const file = lossFile.files[0];
+      if (!file) return alert('Bhai, haar ka screenshot toh dalo!');
 
+      submitLossBtn.disabled = true;
+      try {
+        const url = await uploadToImgBB(file);
+        const tx = await runTransaction(ref(db, `battles/${pendingLossBattleId}`), (battle) => {
+          if (!battle || battle.status !== 'playing' || battle.settledAt) return;
+          
+          battle.status = 'pending'; 
+          battle.result_status = 'pending_loss'; 
+          battle.loss_claim_by = phone;
+          battle.loss_screenshot = url;
+          battle.winnerPhone = battle.creatorPhone === phone ? battle.joinerPhone : battle.creatorPhone;
+          battle.loserPhone = phone;
+          battle.updatedAt = Date.now();
+          return battle;
+        });
+
+        if (!tx.committed) throw new Error('Loss submit nahi ho paya.');
+
+        closeModal(lossModal);
+        alert('Report bhej di gayi hai! Admin verify karke match settle karega.');
+        pendingLossBattleId = null;
+        lossFile.value = '';
+      } catch (error) {
+        alert(error.message || 'Error aa gaya!');
+      } finally {
+        submitLossBtn.disabled = false;
+      }
+    }
     async function uploadToImgBB(file) {
       const fd = new FormData();
       fd.append('image', file);
