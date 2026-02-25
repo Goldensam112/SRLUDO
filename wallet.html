@@ -120,175 +120,60 @@
     </div>
   </section>
 
-  <script type="module">
-   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, get, set, push, onValue, runTransaction, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-// Yeh nayi line humne chabi (Auth) mangwane ke liye jodi hai
-import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import { getDatabase, ref, get, set, push, onValue, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+  import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
-    const firebaseConfig = {
-      apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
-      authDomain: 'sr-ludo-4440b.firebaseapp.com',
-      databaseURL: 'https://sr-ludo-4440b-default-rtdb.firebaseio.com',
-      projectId: 'sr-ludo-4440b',
-      storageBucket: 'sr-ludo-4440b.firebasestorage.app',
-      messagingSenderId: '1080387235822',
-      appId: '1:1080387235822:web:77faea231641837950e8ff'
-    };
+  const firebaseConfig = {
+    apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
+    authDomain: 'sr-ludo-4440b.firebaseapp.com',
+    databaseURL: 'https://sr-ludo-4440b-default-rtdb.firebaseio.com',
+    projectId: 'sr-ludo-4440b',
+    storageBucket: 'sr-ludo-4440b.firebasestorage.app',
+    messagingSenderId: '1080387235822',
+    appId: '1:1080387235822:web:77faea231641837950e8ff'
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const IMGBB_API_KEY = 'ca44783bda6779b5e3913432bd243b30';
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+  const IMGBB_API_KEY = 'ca44783bda6779b5e3913432bd243b30';
 
-    const phone = localStorage.getItem('sr_ludo_phone');
-    // Local storage se phone lene ki bajaye, Firebase se puchenge
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // Agar user mil gaya, toh uska phone number nikaalo
-    const userPhone = user.email.split('@')[0];
-    const finalPhone = userPhone.length === 10 ? "+91" + userPhone : userPhone;
-    
-    console.log("Logged in user:", finalPhone);
+  // Global variables
+  let userData = {};
+  let activeTab = 'deposit';
+  let currentMethod = 'UPI';
+  let phone = ""; // Ye niche auto-fill hoga
 
-    // Ab yahan se aapka pura purana logic shuru hoga...
-    // Jo loadHistory() aur onValue() functions hain, wo yahan sahi kaam karenge.
-    
-  } else {
-    // Agar user logged in nahi hai, toh wapas login page par bhej do
-    window.location.href = 'index.html';
-  }
-});
-    if (!phone) window.location.href = 'index.html';
+  const cashBal = document.getElementById('cashBal');
+  const winBal = document.getElementById('winBal');
+  const historyList = document.getElementById('historyList');
+  const referralWallet = document.getElementById('referralWallet');
+  const totalEarned = document.getElementById('totalEarned');
+  const totalRefers = document.getElementById('totalRefers');
+  const withdrawMethodInfo = document.getElementById('withdrawMethodInfo');
 
-    const cashBal = document.getElementById('cashBal');
-    const winBal = document.getElementById('winBal');
-    const historyList = document.getElementById('historyList');
-    const referralWallet = document.getElementById('referralWallet');
-    const totalEarned = document.getElementById('totalEarned');
-    const totalRefers = document.getElementById('totalRefers');
-    const withdrawMethodInfo = document.getElementById('withdrawMethodInfo');
+  const fmt = (v = 0) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+  const showModal = (id) => { document.getElementById(id).classList.add('show'); document.getElementById('overlay').classList.add('show'); };
+  const closeModal = (modal) => { modal.classList.remove('show'); document.getElementById('overlay').classList.remove('show'); };
 
-    let userData = {};
-    let activeTab = 'deposit';
-    let currentMethod = 'UPI';
-
-    const fmt = (v = 0) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
-    const showModal = (id) => { document.getElementById(id).classList.add('show'); document.getElementById('overlay').classList.add('show'); };
-    const closeModal = (modal) => { modal.classList.remove('show'); document.getElementById('overlay').classList.remove('show'); };
-
-    const renderHistory = (records) => {
-      if (!records.length) { historyList.innerHTML = '<div class="item muted">No records found.</div>'; return; }
-      historyList.innerHTML = records.map(r => {
-        const status = (r.status || 'pending').toLowerCase();
-        const color = status === 'approved' ? '#38d17f' : (status === 'rejected' ? '#ff3d4d' : '#ffb34a');
-        return `
-          <div class="item" style="border-left: 4px solid ${color}; background:rgba(255,255,255,0.02); padding:10px; margin-bottom:8px; border-radius:8px;">
-            <div style="display:flex; justify-content:space-between;">
-              <strong>${fmt(r.amount)}</strong>
-              <span style="color:${color}; font-weight:800; text-transform:uppercase; font-size:10px;">${status}</span>
-            </div>
-            <div class="muted" style="font-size:11px; margin-top:5px;">${new Date(r.time).toLocaleString('en-IN')}</div>
-          </div>`;
-      }).join('');
-    };
-
-    const loadHistory = async () => {
-      const path = activeTab === 'deposit' ? 'deposit_requests' : 'withdraw_requests';
-      const snap = await get(ref(db, path));
-      const all = snap.val() || {};
-      const filtered = Object.values(all).filter(i => i && i.phone === phone).sort((a,b) => (b.time || 0) - (a.time || 0));
-      renderHistory(filtered);
-    };
-
-    const renderWithdrawMethodInfo = () => {
-      if (currentMethod === 'UPI') {
-        withdrawMethodInfo.innerHTML = userData.upi_id ? `UPI: ${userData.upi_id}` : '<span style="color:red">Profile mein UPI update karein!</span>';
-      } else {
-        withdrawMethodInfo.innerHTML = userData.bank_acc ? `A/C: ${userData.bank_acc}<br>IFSC: ${userData.bank_ifsc}` : '<span style="color:red">Profile mein Bank details dalein!</span>';
-      }
-    };
-
-    // --- WITHDRAW LOGIC (SECURE) ---
-    const submitWithdraw = async () => {
-      const amount = Number(document.getElementById('withdrawAmount').value);
-      if (userData.kyc_status !== 'verified') return alert('Pehle KYC verify karein!');
-      if (!amount || amount < 100) return alert('Minimum ₹100 withdraw karein');
+  // --- AUTH CHECK: Sab kuch iske andar hona chahiye ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const userEmailPrefix = user.email.split('@')[0];
+      phone = userEmailPrefix.length === 10 ? "+91" + userEmailPrefix : userEmailPrefix;
+      localStorage.setItem('sr_ludo_phone', phone);
       
-      const detailsToSave = currentMethod === 'UPI' 
-        ? { upi_id: (userData.upi_id || '').trim() } 
-        : { acc_no: (userData.bank_acc || '').trim(), ifsc: (userData.bank_ifsc || '').trim(), holder: (userData.full_name || '').trim() };
+      console.log("Authenticated as:", phone);
+      startAppLogic(); // Pura logic yahan se shuru hoga
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
 
-      if (currentMethod === 'UPI' && !detailsToSave.upi_id) return alert('Profile mein UPI ID save karein!');
-      if (currentMethod === 'Bank' && !detailsToSave.acc_no) return alert('Profile mein Bank Details save karein!');
-
-      const btn = document.getElementById('submitWithdrawBtn');
-      btn.disabled = true;
-
-      try {
-        const userRef = ref(db, `users/${phone}`);
-        const tx = await runTransaction(userRef, (user) => {
-          if (!user) return user;
-          const currentWin = Number(user.win_balance || 0);
-          if (currentWin < amount) return; 
-          user.win_balance = currentWin - amount; 
-          return user;
-        });
-
-        if (!tx.committed) throw new Error('Balance kam hai!');
-
-        const reqRef = push(ref(db, 'withdraw_requests'));
-        await set(reqRef, {
-          id: reqRef.key, phone, amount, status: 'pending', time: Date.now(), 
-          method: currentMethod, details: detailsToSave
-        });
-
-        alert('Request Submitted! Amount Cut from Wallet.');
-        closeModal(document.getElementById('withdrawModal'));
-        loadHistory();
-      } catch (e) { alert(e.message); } finally { btn.disabled = false; }
-    };
-
-    // --- REFERRAL COMMISSION TRANSFER ---
-    document.getElementById('withdrawReferralBtn').onclick = async () => {
-      const available = Number(userData.referral_balance || 0);
-      if (available <= 0) return alert('No commission available!');
-
-      const btn = document.getElementById('withdrawReferralBtn');
-      btn.disabled = true;
-      try {
-        const userRef = ref(db, `users/${phone}`);
-        const tx = await runTransaction(userRef, (user) => {
-          if (!user) return user;
-          const refBal = Number(user.referral_balance || 0);
-          if (refBal <= 0) return;
-          user.referral_balance = 0;
-          user.balance = (Number(user.balance) || 0) + refBal;
-          return user;
-        });
-        if (tx.committed) alert('Commission transferred to Deposit Cash!');
-      } catch (e) { alert('Transfer failed!'); } finally { btn.disabled = false; }
-    };
-
-    // --- DEPOSIT LOGIC ---
-    const submitDeposit = async () => {
-      const amount = Number(document.getElementById('depositAmount').value);
-      const utr = document.getElementById('utrInput').value.trim();
-      const file = document.getElementById('depositSS').files[0];
-      if (!amount || !utr || !file) return alert('Sabhi fields bharein!');
-
-      const btn = document.getElementById('submitDepositBtn');
-      btn.disabled = true;
-      try {
-        const fd = new FormData(); fd.append('image', file);
-        const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
-        const json = await resp.json();
-        const url = json.data.url;
-        const reqRef = push(ref(db, 'deposit_requests'));
-        await set(reqRef, { id: reqRef.key, phone, amount, utr, screenshot: url, status: 'pending', time: Date.now() });
-        alert('Deposit Request Submitted!'); closeModal(document.getElementById('depositModal')); loadHistory();
-      } catch (e) { alert('Failed!'); } finally { btn.disabled = false; }
-    };
-
+  function startAppLogic() {
+    // 1. User Balance Load Karein
     onValue(ref(db, `users/${phone}`), (snap) => {
       userData = snap.val() || {};
       cashBal.textContent = fmt(userData.balance);
@@ -298,26 +183,102 @@ onAuthStateChanged(auth, (user) => {
       renderWithdrawMethodInfo();
     });
 
+    // 2. Referrals Load Karein
     onValue(ref(db, `referrals/${phone}`), (snap) => {
       totalRefers.textContent = Object.keys(snap.val() || {}).length;
     });
 
-    document.getElementById('addCashBtn').onclick = () => showModal('depositModal');
-    document.getElementById('withdrawBtn').onclick = () => { renderWithdrawMethodInfo(); showModal('withdrawModal'); };
-    document.getElementById('submitWithdrawBtn').onclick = submitWithdraw;
-    document.getElementById('submitDepositBtn').onclick = submitDeposit;
-    document.getElementById('methodUpiBtn').onclick = () => { currentMethod = 'UPI'; document.getElementById('methodUpiBtn').classList.add('active'); document.getElementById('methodBankBtn').classList.remove('active'); renderWithdrawMethodInfo(); };
-    document.getElementById('methodBankBtn').onclick = () => { currentMethod = 'Bank'; document.getElementById('methodBankBtn').classList.add('active'); document.getElementById('methodUpiBtn').classList.remove('active'); renderWithdrawMethodInfo(); };
-    document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); activeTab = t.dataset.tab; loadHistory(); });
-    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = () => closeModal(document.getElementById(b.dataset.closeModal)));
-    document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
-    document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); };
-    document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); window.location.reload(); };
-
+    // 3. History Load Karein
     loadHistory();
-  </script>
+  }
+
+  // --- BAKI FUNCTIONS (History, Withdraw, Deposit) ---
+  const renderHistory = (records) => {
+    if (!records.length) { historyList.innerHTML = '<div class="item muted">No records found.</div>'; return; }
+    historyList.innerHTML = records.map(r => {
+      const status = (r.status || 'pending').toLowerCase();
+      const color = status === 'approved' ? '#38d17f' : (status === 'rejected' ? '#ff3d4d' : '#ffb34a');
+      return `<div class="item" style="border-left: 4px solid ${color}; background:rgba(255,255,255,0.02); padding:10px; margin-bottom:8px; border-radius:8px;">
+                <div style="display:flex; justify-content:space-between;">
+                  <strong>${fmt(r.amount)}</strong>
+                  <span style="color:${color}; font-weight:800; text-transform:uppercase; font-size:10px;">${status}</span>
+                </div>
+                <div class="muted" style="font-size:11px; margin-top:5px;">${new Date(r.time).toLocaleString('en-IN')}</div>
+              </div>`;
+    }).join('');
+  };
+
+  const loadHistory = async () => {
+    const path = activeTab === 'deposit' ? 'deposit_requests' : 'withdraw_requests';
+    const snap = await get(ref(db, path));
+    const all = snap.val() || {};
+    const filtered = Object.values(all).filter(i => i && i.phone === phone).sort((a,b) => (b.time || 0) - (a.time || 0));
+    renderHistory(filtered);
+  };
+
+  const renderWithdrawMethodInfo = () => {
+    if (currentMethod === 'UPI') {
+      withdrawMethodInfo.innerHTML = userData.upi_id ? `UPI: ${userData.upi_id}` : '<span style="color:red">Profile mein UPI update karein!</span>';
+    } else {
+      withdrawMethodInfo.innerHTML = userData.bank_acc ? `A/C: ${userData.bank_acc}<br>IFSC: ${userData.bank_ifsc}` : '<span style="color:red">Profile mein Bank details dalein!</span>';
+    }
+  };
+
+  // Buttons Click Handlers
+  document.getElementById('addCashBtn').onclick = () => showModal('depositModal');
+  document.getElementById('withdrawBtn').onclick = () => { renderWithdrawMethodInfo(); showModal('withdrawModal'); };
+  document.getElementById('submitWithdrawBtn').onclick = async () => {
+    const amount = Number(document.getElementById('withdrawAmount').value);
+    if (userData.kyc_status !== 'verified') return alert('Pehle KYC verify karein!');
+    if (!amount || amount < 100) return alert('Min ₹100');
+    
+    try {
+      const userRef = ref(db, `users/${phone}`);
+      const tx = await runTransaction(userRef, (user) => {
+        if (!user) return user;
+        if ((user.win_balance || 0) < amount) return;
+        user.win_balance -= amount;
+        return user;
+      });
+      if (!tx.committed) throw new Error('Balance kam hai!');
+      
+      const reqRef = push(ref(db, 'withdraw_requests'));
+      await set(reqRef, { id: reqRef.key, phone, amount, status: 'pending', time: Date.now(), method: currentMethod });
+      alert('Request Sent!'); closeModal(document.getElementById('withdrawModal')); loadHistory();
+    } catch(e) { alert(e.message); }
+  };
+
+  document.getElementById('submitDepositBtn').onclick = async () => {
+    const amount = Number(document.getElementById('depositAmount').value);
+    const utr = document.getElementById('utrInput').value.trim();
+    const file = document.getElementById('depositSS').files[0];
+    if (!amount || !utr || !file) return alert('Fill all!');
+
+    try {
+      const fd = new FormData(); fd.append('image', file);
+      const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+      const json = await resp.json();
+      const reqRef = push(ref(db, 'deposit_requests'));
+      await set(reqRef, { id: reqRef.key, phone, amount, utr, screenshot: json.data.url, status: 'pending', time: Date.now() });
+      alert('Submitted!'); closeModal(document.getElementById('depositModal')); loadHistory();
+    } catch(e) { alert('Failed'); }
+  };
+
+  // UI Navigation
+  document.getElementById('methodUpiBtn').onclick = () => { currentMethod = 'UPI'; renderWithdrawMethodInfo(); };
+  document.getElementById('methodBankBtn').onclick = () => { currentMethod = 'Bank'; renderWithdrawMethodInfo(); };
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => { 
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active')); 
+    t.classList.add('active'); activeTab = t.dataset.tab; loadHistory(); 
+  });
+  document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = () => closeModal(document.getElementById(b.dataset.closeModal)));
+  document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
+  document.getElementById('overlay').onclick = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); };
+  document.getElementById('logoutBtn').onclick = () => { auth.signOut().then(() => { localStorage.clear(); location.reload(); }); };
+</script>
 </body>
 </html>
+
 
 
 
