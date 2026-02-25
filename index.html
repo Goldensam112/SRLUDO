@@ -66,6 +66,20 @@
     .bottom-nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(540px, 100%); background: #ffffff; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 10px 0; z-index: 100; }
     .nav-item { color: #64748b; text-align: center; font-size: 11px; text-decoration: none; }
     .nav-item.active { color: var(--accent); }
+    .terms-row { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 8px; 
+      font-size: 12px; 
+      color: #64748b; 
+      margin: 10px 0; 
+    }
+    .terms-row input { 
+      width: 16px; 
+      height: 16px; 
+      cursor: pointer; 
+    }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
   </style>
 </head>
@@ -80,6 +94,10 @@
         <input id="loginPhone" class="login-input" type="tel" maxlength="10" placeholder="Mobile Number">
         <input id="loginPass" class="login-input" type="password" placeholder="Password (Min 6 chars)">
         <input id="referralCode" class="login-input" type="text" placeholder="Referral Code (Optional)">
+        <div class="terms-row">
+          <input type="checkbox" id="termsCheck" checked>
+          <span>I agree to the <a href="terms.html" style="color:var(--accent); text-decoration:none; font-weight:600;">Terms & Conditions</a></span>
+        </div>
         
         <button id="emailLoginBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; margin-top: 5px;">Login / Register</button>
         
@@ -190,7 +208,7 @@
     const overlay = document.getElementById('overlay');
     const historyModal = document.getElementById('historyModal');
     const historyList = document.getElementById('historyList');
-
+    const termsCheck = document.getElementById('termsCheck');
     let currentPhone = localStorage.getItem('sr_ludo_phone');
 
     // --- REFFERAL LOGIC ---
@@ -231,6 +249,10 @@
 
     // --- LOGIN LOGIC ---
     document.getElementById('emailLoginBtn').onclick = async () => {
+      if(!termsCheck.checked) {
+          alert("Bhai, pehle Rules maan lo (Tick karein)!");
+          return;
+      }
       const p = document.getElementById('loginPhone').value.trim();
       const pass = document.getElementById('loginPass').value.trim();
       const refCode = document.getElementById('referralCode').value.trim();
