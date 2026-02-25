@@ -256,15 +256,27 @@
       bankAccInput.value = user.bank_acc || '';
       ifscInput.value = user.bank_ifsc || '';
 
-      const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
-      const myReferralCode = user.myReferralCode || referralDigits;
-      referralCodeInput.value = myReferralCode;
+      // --- REFERRAL SYSTEM FIX ---
+const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
+const myReferralCode = user.myReferralCode || referralDigits;
+referralCodeInput.value = myReferralCode;
 
-      if (!user.myReferralCode) {
-        update(userRef, { myReferralCode }).catch(() => {});
-        set(ref(db, `referral_codes/${myReferralCode}`), { phone, createdAt: Date.now() }).catch(() => {});
-      }
+// 1. Pehle check karein ki kya ye code referral_codes collection mein hai
+get(ref(db, `referral_codes/${myReferralCode}`)).then((codeSnap) => {
+  if (!codeSnap.exists()) {
+    // 2. Agar nahi hai, toh alag collection 'referral_codes' mein create karein
+    set(ref(db, `referral_codes/${myReferralCode}`), {
+      phone: phone,
+      owner: phone,
+      createdAt: Date.now()
+    });
+  }
+});
 
+// 3. User ki apni profile mein bhi update rakhein (dikhane ke liye)
+if (!user.myReferralCode) {
+  update(userRef, { myReferralCode: myReferralCode });
+}
       const lockBank = Boolean((user.upi_id || '').trim() || (user.bank_acc || '').trim());
       setBankLockState(lockBank);
     });
