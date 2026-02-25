@@ -239,6 +239,32 @@
   });
 
   function loadProfileData() {
+    // 1. Ek baar data lekar check karein ki code missing hai ya nahi
+    get(userRef).then(async (snap) => {
+      const user = snap.val() || {};
+      const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
+      const myCode = user.myReferralCode || referralDigits;
+
+      // 2. Referral Codes collection mein entry check aur create karein
+      const codeRef = ref(db, `referral_codes/${myCode}`);
+      const codeSnap = await get(codeRef);
+
+      if (!codeSnap.exists()) {
+        console.log("Creating missing code in referral_codes...");
+        await set(codeRef, {
+          phone: phone,
+          owner: phone,
+          createdAt: Date.now()
+        });
+      }
+
+      // 3. Agar user profile mein code nahi hai toh wahan bhi daal dein
+      if (!user.myReferralCode) {
+        await update(userRef, { myReferralCode: myCode });
+      }
+    });
+
+    // 4. Ab baaki UI ko real-time update hone dein
     onValue(userRef, (snapshot) => {
       const user = snapshot.val() || {};
       const kycStatus = (user.kyc_status || 'pending').toLowerCase();
@@ -251,26 +277,7 @@
       upiInput.value = user.upi_id || '';
       bankAccInput.value = user.bank_acc || '';
       ifscInput.value = user.bank_ifsc || '';
-
-      // --- REFERRAL SYSTEM FIX ---
-      const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
-      const myReferralCode = user.myReferralCode || referralDigits;
-      referralCodeInput.value = myReferralCode;
-
-      // Ab 'get' kaam karega kyuki humne import kar liya hai
-      get(ref(db, `referral_codes/${myReferralCode}`)).then((codeSnap) => {
-        if (!codeSnap.exists()) {
-          set(ref(db, `referral_codes/${myReferralCode}`), {
-            phone: phone,
-            owner: phone,
-            createdAt: Date.now()
-          }).then(() => console.log("Code Created in referral_codes!"));
-        }
-      });
-
-      if (!user.myReferralCode) {
-        update(userRef, { myReferralCode: myReferralCode });
-      }
+      referralCodeInput.value = user.myReferralCode || "";
 
       const lockBank = Boolean((user.upi_id || '').trim() || (user.bank_acc || '').trim());
       setBankLockState(lockBank);
