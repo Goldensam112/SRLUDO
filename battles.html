@@ -271,16 +271,8 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import {
-      getDatabase,
-      ref,
-      onValue,
-      push,
-      get,
-      set,
-      update,
-      runTransaction
-    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+   import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getDatabase, ref, onValue, push, get, set, update, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
@@ -295,17 +287,34 @@
     const IMGBB_API_KEY = window.IMGBB_API_KEY || localStorage.getItem('sr_ludo_imgbb_api_key') || 'ca44783bda6779b5e3913432bd243b30';
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+const auth = getAuth(app);
+   // 1. Phone variable ko khaali rakhein pehle
+let phone = ""; 
 
-    const normalizePhone = (value) => {
-      const cleaned = (value || '').toString().trim().replace(/[^\d+]/g, '');
-      if (!cleaned) return '';
-      return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
-    };
+// 2. --- SURAKSHA CHAKRA (Iske andar hi sab chalega) ---
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Email se phone number nikalne ka logic
+    const userEmailPrefix = user.email.split('@')[0];
+    phone = userEmailPrefix.length === 10 ? "+91" + userEmailPrefix : userEmailPrefix;
+    localStorage.setItem('sr_ludo_phone', phone);
+    
+    console.log("Battles page active for:", phone);
 
-    const phone = normalizePhone(localStorage.getItem('sr_ludo_phone'));
-    if (!phone) {
-      window.location.href = 'index.html';
+    // Ab ye 3 functions jo aapke code mein niche hain, unhe yahan call karein
+    ensureUserRecord();
+    syncWalletRealtime();
+    syncBattlesRealtime();
+  } else {
+    // Agar login nahi hai toh login page par bhej do
+    window.location.href = 'index.html';
+  }
+});
+
+// --- SURAKSHA CHAKRA END ---
+
+// Ab iske niche aapke saare purane functions (createBattle, joinBattle, etc.) 
+// jaise hain waise hi rehne dein, unhe chhedne ki zaroorat nahi hai.
       throw new Error('Phone missing. Redirecting to login.');
     }
     localStorage.setItem('sr_ludo_phone', phone);
