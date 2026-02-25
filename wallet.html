@@ -225,6 +225,45 @@
   };
 
   // Buttons Click Handlers
+// Referral Commission ko Cash Wallet mein bhejne ka logic
+document.getElementById('withdrawReferralBtn').onclick = async () => {
+    // Check karein ki referral wallet mein paisa hai bhi ya nahi
+    const amountToMove = Number(userData.referral_balance || 0);
+
+    if (amountToMove <= 0) {
+        return alert('Referral wallet mein balance nahi hai!');
+    }
+
+    if (!confirm(`Kya aap ₹${amountToMove} apne cash wallet mein transfer karna chahte hain?`)) {
+        return;
+    }
+
+    try {
+        const userRef = ref(db, `users/${phone}`);
+        
+        // Transaction chalao taki referral se minus ho aur balance mein plus ho
+        const tx = await runTransaction(userRef, (user) => {
+            if (user) {
+                const comm = Number(user.referral_balance || 0);
+                if (comm > 0) {
+                    // Referral se balance mein paisa shift karo
+                    user.balance = (user.balance || 0) + comm;
+                    user.referral_balance = 0; // Referral wallet khali kar do
+                }
+            }
+            return user;
+        });
+
+        if (tx.committed) {
+            alert('Success! Commission aapke Cash Wallet mein bhej diya gaya hai.');
+        } else {
+            alert('Transfer fail ho gaya. Kripya dobara koshish karein.');
+        }
+    } catch (error) {
+        console.error("Transfer Error:", error);
+        alert('Error: ' + error.message);
+    }
+};
   document.getElementById('addCashBtn').onclick = () => showModal('depositModal');
   document.getElementById('withdrawBtn').onclick = () => { renderWithdrawMethodInfo(); showModal('withdrawModal'); };
   document.getElementById('submitWithdrawBtn').onclick = async () => {
@@ -278,6 +317,7 @@
 </script>
 </body>
 </html>
+
 
 
 
