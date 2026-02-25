@@ -140,7 +140,7 @@
         <div class="status-wrap">
           <div>
             <h3 style="margin:0 0 6px;">KYC Status</h3>
-            <p class="help" style="margin:0;">Your verification state from Firebase.</p>
+            <p class="help" style="margin:0;">Verification details from server.</p>
           </div>
           <span id="kycBadge" class="badge pending">Pending</span>
         </div>
@@ -189,9 +189,8 @@
     </main>
   </div>
 
- <script type="module">
+<script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-  // Maine yahan 'get' add kar diya hai
   import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
   import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
@@ -231,55 +230,53 @@
       const userPrefix = user.email.split('@')[0];
       phone = userPrefix.length === 10 ? "+91" + userPrefix : userPrefix;
       userRef = ref(db, `users/${phone}`);
-      console.log("Profile authenticated as:", phone);
       loadProfileData(); 
     } else {
       window.location.href = 'index.html';
     }
   });
 
-  function loadProfileData() {
-    // 1. Ek baar data lekar check karein ki code missing hai ya nahi
-    get(userRef).then(async (snap) => {
-      const user = snap.val() || {};
-      const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
-      const myCode = user.myReferralCode || referralDigits;
+  async function loadProfileData() {
+    // Sabse pehle ek baar data check karte hain
+    const snap = await get(userRef);
+    const user = snap.val() || {};
+    
+    // Code banate hain (Mobile ke last 6 digits)
+    const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
+    const myCode = user.myReferralCode || referralDigits;
 
-      // 2. Referral Codes collection mein entry check aur create karein
-      const codeRef = ref(db, `referral_codes/${myCode}`);
-      const codeSnap = await get(codeRef);
+    // 1. Referral_codes table mein check aur save karein
+    const codeRef = ref(db, `referral_codes/${myCode}`);
+    const codeSnap = await get(codeRef);
+    if (!codeSnap.exists()) {
+      await set(codeRef, {
+        phone: phone,
+        owner: phone,
+        createdAt: Date.now()
+      });
+    }
 
-      if (!codeSnap.exists()) {
-        console.log("Creating missing code in referral_codes...");
-        await set(codeRef, {
-          phone: phone,
-          owner: phone,
-          createdAt: Date.now()
-        });
-      }
+    // 2. User ki profile mein agar code nahi hai toh wahan bhi save karein
+    if (!user.myReferralCode) {
+      await update(userRef, { myReferralCode: myCode });
+    }
 
-      // 3. Agar user profile mein code nahi hai toh wahan bhi daal dein
-      if (!user.myReferralCode) {
-        await update(userRef, { myReferralCode: myCode });
-      }
-    });
-
-    // 4. Ab baaki UI ko real-time update hone dein
+    // Ab live changes dikhane ke liye onValue setup karein
     onValue(userRef, (snapshot) => {
-      const user = snapshot.val() || {};
-      const kycStatus = (user.kyc_status || 'pending').toLowerCase();
+      const data = snapshot.val() || {};
+      const kycStatus = (data.kyc_status || 'pending').toLowerCase();
 
       kycBadge.className = `badge ${statusClass(kycStatus)}`;
       kycBadge.textContent = kycStatus === 'verified' ? 'Verified ✅' : kycStatus.charAt(0).toUpperCase() + kycStatus.slice(1);
 
-      fullNameInput.value = user.full_name || '';
-      aadharNumberInput.value = user.aadhar_no || '';
-      upiInput.value = user.upi_id || '';
-      bankAccInput.value = user.bank_acc || '';
-      ifscInput.value = user.bank_ifsc || '';
-      referralCodeInput.value = user.myReferralCode || "";
+      fullNameInput.value = data.full_name || '';
+      aadharNumberInput.value = data.aadhar_no || '';
+      upiInput.value = data.upi_id || '';
+      bankAccInput.value = data.bank_acc || '';
+      ifscInput.value = data.bank_ifsc || '';
+      referralCodeInput.value = data.myReferralCode || myCode;
 
-      const lockBank = Boolean((user.upi_id || '').trim() || (user.bank_acc || '').trim());
+      const lockBank = Boolean((data.upi_id || '').trim() || (data.bank_acc || '').trim());
       setBankLockState(lockBank);
     });
   }
