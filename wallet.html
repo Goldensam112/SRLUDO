@@ -141,6 +141,23 @@ import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
     const IMGBB_API_KEY = 'ca44783bda6779b5e3913432bd243b30';
 
     const phone = localStorage.getItem('sr_ludo_phone');
+    // Local storage se phone lene ki bajaye, Firebase se puchenge
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Agar user mil gaya, toh uska phone number nikaalo
+    const userPhone = user.email.split('@')[0];
+    const finalPhone = userPhone.length === 10 ? "+91" + userPhone : userPhone;
+    
+    console.log("Logged in user:", finalPhone);
+
+    // Ab yahan se aapka pura purana logic shuru hoga...
+    // Jo loadHistory() aur onValue() functions hain, wo yahan sahi kaam karenge.
+    
+  } else {
+    // Agar user logged in nahi hai, toh wapas login page par bhej do
+    window.location.href = 'index.html';
+  }
+});
     if (!phone) window.location.href = 'index.html';
 
     const cashBal = document.getElementById('cashBal');
@@ -301,5 +318,6 @@ import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
   </script>
 </body>
 </html>
+
 
 
