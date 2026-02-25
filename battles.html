@@ -268,7 +268,15 @@
       <button class="btn-muted" data-close-modal="winModal" type="button">Cancel</button>
     </div>
   </section>
-
+<section id="lossModal" class="modal" role="dialog" aria-modal="true">
+  <h3 class="title">Upload Loss Screenshot</h3>
+  <p class="small muted">Bhai, apni haar ka screenshot dalo taaki admin check kar sake.</p>
+  <input id="lossFile" class="input" type="file" accept="image/*" />
+  <div class="row" style="margin-top:10px;">
+    <button id="submitLossBtn" class="btn btn-danger full" type="button">Submit Loss</button>
+    <button class="btn-muted" data-close-modal="lossModal" type="button">Cancel</button>
+  </div>
+</section>
   <script type="module">
    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, onValue, push, get, set, update, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
@@ -324,7 +332,10 @@ onAuthStateChanged(auth, (user) => {
     const overlay = document.getElementById('overlay');
     const submitWinBtn = document.getElementById('submitWinBtn');
     const winFile = document.getElementById('winFile');
-
+const lossModal = document.getElementById('lossModal');
+    const lossFile = document.getElementById('lossFile');
+    const submitLossBtn = document.getElementById('submitLossBtn');
+    let pendingLossBattleId = null; // Haar wali ID yaad rakhne ke liye
     let myUser = { balance: 0, win_balance: 0 };
     let pendingWinBattleId = null;
     let battlesCache = {};
@@ -562,25 +573,6 @@ async function processReferralCommission(winnerPhone, winAmount) {
         alert('Room code is already locked and cannot be changed.');
       }
     }
-
-    async function declareLost(battleId) {
-      const battleRef = ref(db, `battles/${battleId}`);
-      const tx = await runTransaction(battleRef, (battle) => {
-        if (!battle || !['playing', 'dispute'].includes(battle.status) || battle.settledAt) return;
-        const isCreator = battle.creatorPhone === phone;
-        const isJoiner = battle.joinerPhone === phone;
-        if (!isCreator && !isJoiner) return;
-        battle.status = 'completed';
-        battle.result_status = 'auto_lost';
-        battle.loserPhone = phone;
-        battle.winnerPhone = isCreator ? battle.joinerPhone : battle.creatorPhone;
-        battle.resultType = 'lost-auto-settled';
-        battle.settlement_processed = true;
-        battle.settledAt = Date.now();
-        battle.updatedAt = Date.now();
-        return battle;
-      });
-
       if (!tx.committed) return alert('Unable to process result.');
       const battle = tx.snapshot.val() || {};
       const winAmt = computeWinAmount(battle.amount);
@@ -638,7 +630,40 @@ await processReferralCommission(battle.winnerPhone, winAmt);
         submitWinBtn.disabled = false;
       }
     }
+async function declareLossWithScreenshot() {
+      if (!pendingLossBattleId) return;
+      const file = lossFile.files[0];
+      if (!file) return alert('Bhai, haar ka screenshot toh dalo!');
 
+      submitLossBtn.disabled = true;
+      try {
+        const url = await uploadToImgBB(file);
+        const tx = await runTransaction(ref(db, `battles/${pendingLossBattleId}`), (battle) => {
+          if (!battle || battle.status !== 'playing' || battle.settledAt) return;
+          
+          battle.status = 'pending'; // Match hold par chala gaya
+          battle.result_status = 'pending_loss'; 
+          battle.loss_claim_by = phone;
+          battle.loss_screenshot = url;
+          // Winner ko identify karo
+          battle.winnerPhone = battle.creatorPhone === phone ? battle.joinerPhone : battle.creatorPhone;
+          battle.loserPhone = phone;
+          battle.updatedAt = Date.now();
+          return battle;
+        });
+
+        if (!tx.committed) throw new Error('Loss submit nahi ho paya.');
+
+        closeModal(lossModal);
+        alert('Report bhej di gayi hai! Admin verify karke match settle karega.');
+        pendingLossBattleId = null;
+        lossFile.value = '';
+      } catch (error) {
+        alert(error.message || 'Error aa gaya!');
+      } finally {
+        submitLossBtn.disabled = false;
+      }
+    }
 
     function renderOpenBattles(data) {
       const list = Object.values(data || {}).filter((b) => b?.status === 'open').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -726,6 +751,7 @@ await processReferralCommission(battle.winnerPhone, winAmt);
     });
 
     submitWinBtn.addEventListener('click', declareWinWithScreenshot);
+    submitLossBtn.addEventListener('click', declareLossWithScreenshot);
 
     document.body.addEventListener('click', async (event) => {
       const btn = event.target.closest('button[data-action]');
@@ -735,7 +761,10 @@ await processReferralCommission(battle.winnerPhone, winAmt);
       try {
         if (action === 'cancel') await cancelOpenBattle(id);
         if (action === 'join') await joinBattle(id);
-        if (action === 'i-lost') await declareLost(id);
+if (action === 'i-lost') {
+          pendingLossBattleId = id; // Match ID yaad rakho
+          showModal(lossModal);     // Screenshot wala naya box dikhao
+        }
         if (action === 'i-win') {
           pendingWinBattleId = id;
           showModal(winModal);
