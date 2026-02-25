@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="classic2.png">
+  <title>SR LUDO - Best Online Ludo Battle Arena | Real Cash Games</title>
+  <meta name="title" content="SR LUDO - Best Online Ludo Battle Arena">
+  <meta name="description" content="SR LUDO par real players ke sath Ludo battles khelo. Fast withdrawal, 2% referral bonus aur 24/7 support. Join the premium battle arena now!">
+  <meta name="keywords" content="SR Ludo, Online Ludo, Ludo Cash Game, Real Money Ludo, Ludo Battle, Win Cash Ludo">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://srludo.online/">
+  <meta property="og:title" content="SR LUDO - Khelo aur Jeeto Real Cash">
+  <meta property="og:description" content="Fastest withdrawal aur safe matches. Join karein India ka best Ludo platform.">
+  <meta property="og:image" content="https://srludo.online/assets/logo.png">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --bg: #040913; --card: #ffffff; --card-dark: #0d1b33; --text: #e8efff;
+      --text-dark: #1e293b; --muted: #9fb0d1; --line: rgba(255, 255, 255, 0.08);
+      --accent: #2f7bff; --gold-1: #a86b00; --gold-2: #ffd05a; --danger: #ff3d4d;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif;
+      background: radial-gradient(1200px 500px at 50% -200px, #154b99 0%, var(--bg) 65%);
+      color: var(--text); min-height: 100vh; visibility: hidden; opacity: 0;
+    }
+    body.ready { visibility: visible; opacity: 1; transition: opacity 0.2s ease-in; }
+    * { box-sizing: border-box; }
+    .hidden { display: none !important; }
+    .app { max-width: 540px; margin: 0 auto; min-height: 100vh; position: relative; background: #f1f5f9; padding-bottom: 90px; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; width: 78%; max-width: 320px; background: #09172d; border-right: 1px solid var(--line); z-index: 150; transform: translateX(-100%); transition: transform 0.24s ease; padding: 16px; }
+    .sidebar.open { transform: translateX(0); }
+    .menu-link { display: block; color: var(--text); text-decoration: none; border: 1px solid var(--line); padding: 11px 12px; border-radius: 10px; margin-bottom: 10px; background: rgba(255,255,255,0.02); font-size: 14px; }
+    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 140; display: none; }
+    .overlay.show { display: block; }
+    .login-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: #0f172a; }
+    .login-card { width: 100%; background: white; border-radius: 24px; padding: 28px 20px; text-align: center; }
+    .main-logo { height: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--accent)); }
+    .login-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-family: inherit; outline: none; }
+    .login-input:focus { border-color: var(--accent); }
+    .sticky-header { position: sticky; top: 0; z-index: 100; background: #1e293b; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .hamburger { border: none; background: none; color: white; font-size: 24px; cursor: pointer; }
+    .nav-logo { height: 35px; }
+    .wallets { display: flex; gap: 8px; }
+    .pill { min-width: 100px; border-radius: 999px; padding: 7px 11px; font-size: 11px; text-align: center; border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 -8px 16px rgba(0,0,0,0.24); color: white; }
+    .pill strong { display: block; font-size: 14px; margin-top: 2px; }
+    .cash-pill { background: linear-gradient(130deg, #0f49b3, #2a89ff); }
+    .win-pill { background: linear-gradient(130deg, var(--gold-1), var(--gold-2)); color: #1f1711; }
+    .announcement { background: linear-gradient(90deg, #0f172a, #1e293b); margin: 15px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--gold-2); color: white; text-align: center; font-size: 13px; font-weight: 500; }
+    .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 15px; }
+    .game-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); position: relative; cursor: pointer; aspect-ratio: 1/1.2; display: flex; flex-direction: column; align-items: center; border: 1px solid #e2e8f0; }
+    .game-card .img-wrap { width: 100%; height: 75%; overflow: hidden; }
+    .game-card img { width: 100%; height: 100%; object-fit: cover; }
+    .game-label { height: 25%; width: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--text-dark); }
+    .live-tag { position: absolute; top: 8px; right: 8px; background: white; color: var(--danger); font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 50px; display: flex; align-items: center; gap: 4px; }
+    .dot { width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: blink 1s infinite; }
+    .modal { position: fixed; left: 50%; top: 50%; width: min(92%, 460px); transform: translate(-50%, -50%); background: #0a1a32; border: 1px solid var(--line); border-radius: 14px; z-index: 200; padding: 16px; display: none; max-height: 70vh; overflow-y: auto; color: white; }
+    .modal.show { display: block; }
+    .record { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 12px; background: rgba(255,255,255,0.05); }
+    .bottom-nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(540px, 100%); background: #ffffff; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 10px 0; z-index: 100; }
+    .nav-item { color: #64748b; text-align: center; font-size: 11px; text-decoration: none; }
+    .nav-item.active { color: var(--accent); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  </style>
+</head>
+<body>
+
+  <div class="app">
+    <section id="loginScreen" class="login-screen hidden">
+      <div class="login-card">
+        <img src="logo.png" alt="Logo" class="main-logo">
+        <p style="color:var(--text-dark); margin-bottom: 20px; font-weight: 600;">Premium Battle Arena</p>
+        
+        <input id="loginPhone" class="login-input" type="tel" maxlength="10" placeholder="Mobile Number">
+        <input id="loginPass" class="login-input" type="password" placeholder="Password (Min 6 chars)">
+        <input id="referralCode" class="login-input" type="text" placeholder="Referral Code (Optional)">
+        
+        <button id="emailLoginBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; margin-top: 5px;">Login / Register</button>
+        
+        <div style="margin-top: 15px; text-align: center;">
+            <a href="#" id="forgotPassBtn" style="color: #64748b; text-decoration: none; font-size: 12px;">Forgot Password?</a>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 12px; color: #64748b; text-align: center;">
+          By continuing, you agree to our 
+          <a href="privacy.html" style="color: #2f7bff; text-decoration: none; font-weight: 600;">Privacy Policy</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <header class="sticky-header">
+        <div class="header-left">
+          <button id="menuBtn" class="hamburger">☰</button>
+          <img src="logo.png" alt="Logo" class="nav-logo">
+        </div>
+        <div class="wallets">
+          <div class="pill cash-pill" onclick="window.location.href='wallet.html'" style="cursor: pointer;">Cash<strong id="cashAmount">₹0</strong></div>
+          <div class="pill win-pill">Winning<strong id="winAmount">₹0</strong></div>
+        </div>
+      </header>
+
+      <div class="announcement">
+        🙏 दोस्तों SR Ludo फैमिली हमेशा आपके साथ है। कभी भी किसी भाई का विश्वास नहीं तोड़ा जाएगा। 😘
+      </div>
+
+      <div class="game-grid">
+        <div class="game-card" onclick="window.location.href='battles.html'">
+          <div class="live-tag"><div class="dot"></div> LIVE</div>
+          <div class="img-wrap"><img src="classic.png" alt="Ludo Classic"></div>
+          <div class="game-label">Classic Ludo</div>
+        </div>
+        <div class="game-card" onclick="window.location.href='https://wa.me/918982766711'">
+          <div class="live-tag"><div class="dot"></div> LIVE</div>
+          <div class="img-wrap" style="display:flex;align-items:center;justify-content:center;background:#f8fafc;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:50%;height:auto;">
+          </div>
+          <div class="game-label">Support</div>
+        </div>
+      </div>
+
+      <div style="padding:15px; background:white; margin:15px; border-radius:12px; border:1px solid #e2e8f0; color:var(--text-dark);">
+        <strong>Refer & Earn</strong>
+        <p style="font-size:12px; margin:5px 0;">Copy this link and share</p>
+        <div id="myReferralLink" style="background:#f8fafc; padding:10px; border-radius:8px; font-size:13px; font-weight:700; border:1px dashed var(--accent);">Loading...</div>
+      </div>
+
+      <div style="padding:15px;">
+        <img src="classic2.png" alt="Banner" style="width:100%; border-radius:12px; box-shadow:var(--shadow);">
+      </div>
+
+      <nav class="bottom-nav">
+        <a href="#" class="nav-item active">🏠<br>Home</a>
+        <a href="battles.html" class="nav-item">🎮<br>Battles</a>
+        <a href="refer.html" class="nav-item">🎁<br>Refer</a>
+        <a href="wallet.html" class="nav-item">💼<br>Wallet</a>
+        <a href="profile.html" class="nav-item">👤<br>Profile</a>
+      </nav>
+    </section>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <h4 style="color:white; margin-bottom:20px;">SR LUDO Menu</h4>
+    <a href="#" class="menu-link" onclick="location.reload()">Home</a>
+    <a href="#" class="menu-link history-link" data-type="match_history">Match History</a>
+    <a href="#" class="menu-link history-link" data-type="deposit_history">Deposit History</a>
+    <a href="#" class="menu-link history-link" data-type="withdraw_history">Withdraw History</a>
+    <a href="wallet.html" class="menu-link">Wallet</a>
+    <a href="profile.html" class="menu-link">Profile</a>
+    <a href="#" class="menu-link" id="logoutBtn">Logout</a>
+  </aside>
+  <div id="overlay" class="overlay"></div>
+
+  <section id="historyModal" class="modal">
+    <h4 id="modalTitle" style="margin-top:0;">History</h4>
+    <div id="historyList"></div>
+    <button id="closeModalBtn" style="width:100%; padding:10px; margin-top:10px; background:var(--accent); border:none; border-radius:8px; color:white;">Close</button>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, get, set, update, onValue, query, limitToLast } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
+      authDomain: 'sr-ludo-4440b.firebaseapp.com',
+      databaseURL: 'https://sr-ludo-4440b-default-rtdb.firebaseio.com',
+      projectId: 'sr-ludo-4440b',
+      storageBucket: 'sr-ludo-4440b.firebasestorage.app',
+      messagingSenderId: '1080387235822',
+      appId: '1:1080387235822:web:77faea231641837950e8ff'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    const loginScreen = document.getElementById('loginScreen');
+    const dashboard = document.getElementById('dashboard');
+    const cashAmount = document.getElementById('cashAmount');
+    const winAmount = document.getElementById('winAmount');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const historyModal = document.getElementById('historyModal');
+    const historyList = document.getElementById('historyList');
+
+    let currentPhone = localStorage.getItem('sr_ludo_phone');
+
+    // --- REFFERAL LOGIC ---
+    const processReferral = async (newUserPhone, typedCode) => {
+      if (!typedCode || typedCode === newUserPhone) return;
+      try {
+        const codeSnap = await get(ref(db, `referral_codes/${typedCode}`));
+        if (codeSnap.exists()) {
+          const referrerPhone = codeSnap.val().phone;
+          await update(ref(db, `users/${newUserPhone}`), { referredBy: referrerPhone, appliedCode: typedCode });
+          await set(ref(db, `referrals/${referrerPhone}/${newUserPhone}`), { phone: newUserPhone, joinedAt: Date.now() });
+        }
+      } catch (e) { console.error(e); }
+    };
+
+    const createUserIfMissing = async (phone) => {
+      const userRef = ref(db, `users/${phone}`);
+      const userSnap = await get(userRef);
+      const pendingRef = localStorage.getItem('sr_ludo_pending_referral');
+
+      if (!userSnap.exists()) {
+        await set(userRef, { phone, balance: 0, win_balance: 0, kyc_status: 'pending', time: Date.now() });
+        if (pendingRef) {
+          await processReferral(phone, pendingRef);
+          localStorage.removeItem('sr_ludo_pending_referral');
+        }
+      }
+
+      onValue(userRef, (s) => {
+        const u = s.val() || {};
+        cashAmount.textContent = `₹${u.balance || 0}`;
+        winAmount.textContent = `₹${u.win_balance || 0}`;
+        const cleanCode = phone.replace(/\D/g, '').slice(-6);
+        const myLink = `${window.location.origin}${window.location.pathname}?ref=${cleanCode}`;
+        document.getElementById('myReferralLink').textContent = myLink;
+      });
+    };
+
+    // --- LOGIN LOGIC ---
+    document.getElementById('emailLoginBtn').onclick = async () => {
+      const p = document.getElementById('loginPhone').value.trim();
+      const pass = document.getElementById('loginPass').value.trim();
+      const refCode = document.getElementById('referralCode').value.trim();
+
+      if (p.length !== 10 || pass.length < 6) {
+        alert("Enter 10 digit number and min 6 digit password.");
+        return;
+      }
+
+      const dummyEmail = `${p}@srludo.com`;
+      const finalPhone = "+91" + p;
+
+      try {
+        await signInWithEmailAndPassword(auth, dummyEmail, pass);
+        authSuccess(finalPhone, refCode);
+      } catch (err) {
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          try {
+            await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+            authSuccess(finalPhone, refCode);
+          } catch (e) { alert("Registration Failed: " + e.message); }
+        } else { alert("Login Error: " + err.message); }
+      }
+    };
+
+    function authSuccess(phone, refCode) {
+      localStorage.setItem('sr_ludo_phone', phone);
+      if (refCode) localStorage.setItem('sr_ludo_pending_referral', refCode);
+      location.reload();
+    }
+
+    document.getElementById('forgotPassBtn').onclick = async (e) => {
+        e.preventDefault();
+        const p = document.getElementById('loginPhone').value.trim();
+        if(p.length !== 10) return alert("Enter your 10 digit number first.");
+        if(confirm(`Send reset link to ${p}@srludo.com?`)) {
+            try { await sendPasswordResetEmail(auth, `${p}@srludo.com`); alert("Reset link sent!"); }
+            catch(e) { alert(e.message); }
+        }
+    };
+
+    // --- SESSION CHECK ---
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const phoneFromEmail = user.email.split('@')[0];
+        const finalPhone = (phoneFromEmail.length === 10) ? "+91" + phoneFromEmail : phoneFromEmail;
+        localStorage.setItem('sr_ludo_phone', finalPhone);
+        currentPhone = finalPhone;
+        loginScreen.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+        createUserIfMissing(finalPhone);
+      } else {
+        loginScreen.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+      }
+      document.body.classList.add('ready');
+    });
+
+    // --- UI HELPERS ---
+    const toggleSidebar = (show) => { sidebar.classList.toggle('open', show); overlay.classList.toggle('show', show); };
+    document.getElementById('menuBtn').onclick = () => toggleSidebar(true);
+    overlay.onclick = () => { toggleSidebar(false); historyModal.classList.remove('show'); overlay.classList.remove('show'); };
+    document.getElementById('logoutBtn').onclick = async () => { await signOut(auth); localStorage.clear(); location.reload(); };
+    
+    document.getElementById('closeModalBtn').onclick = () => { historyModal.classList.remove('show'); overlay.classList.remove('show'); };
+    document.querySelectorAll('.history-link').forEach(link => {
+      link.onclick = (e) => { e.preventDefault(); showHistory(link.dataset.type); toggleSidebar(false); };
+    });
+
+    const showHistory = async (type) => {
+      if (!currentPhone) return;
+      document.getElementById('modalTitle').textContent = type.replace('_', ' ').toUpperCase();
+      historyList.innerHTML = 'Loading...';
+      historyModal.classList.add('show');
+      overlay.classList.add('show');
+      const snap = await get(query(ref(db, `${type}/${currentPhone}`), limitToLast(15)));
+      const list = snap.val();
+      if (!list) { historyList.innerHTML = 'No records.'; return; }
+      historyList.innerHTML = Object.entries(list).reverse().map(([id, item]) => 
+        `<div class="record">ID: #${id.slice(-6)}<br>Amount: ₹${item.amount || item.entry_fee || 0}<br>Status: ${item.status || 'Success'}</div>`
+      ).join('');
+    };
+
+    // URL Referral Auto-fill
+    const urlParams = new URLSearchParams(window.location.search);
+    const rURL = urlParams.get('ref');
+    if (rURL) { document.getElementById('referralCode').value = rURL; localStorage.setItem('sr_ludo_pending_referral', rURL); }
+
+  </script>
+</body>
+</html>
