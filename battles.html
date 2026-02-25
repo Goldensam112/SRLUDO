@@ -270,18 +270,10 @@
   </section>
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import {
-      getDatabase,
-      ref,
-      onValue,
-      push,
-      get,
-      set,
-      update,
-      runTransaction
-    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-
+   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, push, get, set, update, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+// Yeh niche wali line nayi hai
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     const firebaseConfig = {
       apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
       authDomain: 'sr-ludo-4440b.firebaseapp.com',
@@ -296,20 +288,30 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+const auth = getAuth(app);
 
+// Yeh function check karega ki user login hai ya nahi
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Agar login hai, toh uska phone number nikalo
+    const phoneFromEmail = user.email.split('@')[0];
+    const finalPhone = (phoneFromEmail.length === 10) ? "+91" + phoneFromEmail : phoneFromEmail;
+    
+    // LocalStorage mein update kar do taaki baaki functions chalein
+    localStorage.setItem('sr_ludo_phone', finalPhone);
+    
+    // Ab game shuru karte hain!
+    startApp(); 
+  } else {
+    // Agar login nahi hai, toh wapas bhej do index.html (login screen) par
+    window.location.href = 'index.html';
+  }
+});
     const normalizePhone = (value) => {
       const cleaned = (value || '').toString().trim().replace(/[^\d+]/g, '');
       if (!cleaned) return '';
       return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
     };
-
-    const phone = normalizePhone(localStorage.getItem('sr_ludo_phone'));
-    if (!phone) {
-      window.location.href = 'index.html';
-      throw new Error('Phone missing. Redirecting to login.');
-    }
-    localStorage.setItem('sr_ludo_phone', phone);
-
     const cashAmount = document.getElementById('cashAmount');
     const winAmount = document.getElementById('winAmount');
     const battleAmount = document.getElementById('battleAmount');
@@ -326,7 +328,7 @@
     let myUser = { balance: 0, win_balance: 0 };
     let pendingWinBattleId = null;
     let battlesCache = {};
-
+let phone = localStorage.getItem('sr_ludo_phone');
     const fmt = (n = 0) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
     const maskPhone = (ph) => {
   if (!ph) return 'SR Player';
@@ -780,10 +782,13 @@ await processReferralCommission(battle.winnerPhone, winAmt);
       const val = snap.val();
       document.getElementById('onlinePlayers').textContent = val ? `${val}+` : '500+';
     });
-
-    await ensureUserRecord();
-    syncWalletRealtime();
-    syncBattlesRealtime();
+// Humne sabko ek 'startApp' naam ke dibbe mein band kar diya
+    async function startApp() {
+        if (!phone) return; // Agar phone nahi mila toh rukh jao
+       await ensureUserRecord();   // User ka record check karo
+        syncWalletRealtime();      // Paise (Wallet) dikhana shuru karo
+        syncBattlesRealtime();     // Battles dikhana shuru karo
+    }
   </script>
 </body>
 </html>
