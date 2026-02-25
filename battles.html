@@ -328,7 +328,7 @@ onAuthStateChanged(auth, (user) => {
     let myUser = { balance: 0, win_balance: 0 };
     let pendingWinBattleId = null;
     let battlesCache = {};
-
+let phone = localStorage.getItem('sr_ludo_phone');
     const fmt = (n = 0) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
     const maskPhone = (ph) => {
   if (!ph) return 'SR Player';
@@ -784,7 +784,6 @@ await processReferralCommission(battle.winnerPhone, winAmt);
     });
 // Humne sabko ek 'startApp' naam ke dibbe mein band kar diya
     async function startApp() {
-        const phone = localStorage.getItem('sr_ludo_phone');
         if (!phone) return; // Agar phone nahi mila toh rukh jao
 
         await ensureUserRecord();   // User ka record check karo
