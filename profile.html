@@ -191,8 +191,9 @@
 
  <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-   import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+  // Maine yahan 'get' add kar diya hai
+  import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+  import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
   const firebaseConfig = {
     apiKey: 'AIzaSyAx0fr47IsOtBxakcBj1ndwDYle_XlaE-Y',
@@ -204,7 +205,6 @@ import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic
     appId: '1:1080387235822:web:77faea231641837950e8ff'
   };
 
-  // Initialization
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
@@ -213,7 +213,6 @@ import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic
   let phone = "";
   let userRef = null;
 
-  // HTML elements
   const kycBadge = document.getElementById('kycBadge');
   const fullNameInput = document.getElementById('fullNameInput');
   const aadharNumberInput = document.getElementById('aadharNumberInput');
@@ -227,13 +226,11 @@ import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic
   const referralCodeInput = document.getElementById('referralCodeInput');
   const copyReferralBtn = document.getElementById('copyReferralBtn');
 
-  // --- SURAKSHA CHAKRA (Auth Check) ---
   onAuthStateChanged(auth, (user) => {
     if (user) {
       const userPrefix = user.email.split('@')[0];
       phone = userPrefix.length === 10 ? "+91" + userPrefix : userPrefix;
       userRef = ref(db, `users/${phone}`);
-      
       console.log("Profile authenticated as:", phone);
       loadProfileData(); 
     } else {
@@ -246,7 +243,6 @@ import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic
       const user = snapshot.val() || {};
       const kycStatus = (user.kyc_status || 'pending').toLowerCase();
 
-      // UI Update
       kycBadge.className = `badge ${statusClass(kycStatus)}`;
       kycBadge.textContent = kycStatus === 'verified' ? 'Verified ✅' : kycStatus.charAt(0).toUpperCase() + kycStatus.slice(1);
 
@@ -257,26 +253,25 @@ import { getDatabase, onValue, ref, update, set, get } from 'https://www.gstatic
       ifscInput.value = user.bank_ifsc || '';
 
       // --- REFERRAL SYSTEM FIX ---
-const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
-const myReferralCode = user.myReferralCode || referralDigits;
-referralCodeInput.value = myReferralCode;
+      const referralDigits = phone.replace(/\D/g, '').slice(-6) || '000000';
+      const myReferralCode = user.myReferralCode || referralDigits;
+      referralCodeInput.value = myReferralCode;
 
-// 1. Pehle check karein ki kya ye code referral_codes collection mein hai
-get(ref(db, `referral_codes/${myReferralCode}`)).then((codeSnap) => {
-  if (!codeSnap.exists()) {
-    // 2. Agar nahi hai, toh alag collection 'referral_codes' mein create karein
-    set(ref(db, `referral_codes/${myReferralCode}`), {
-      phone: phone,
-      owner: phone,
-      createdAt: Date.now()
-    });
-  }
-});
+      // Ab 'get' kaam karega kyuki humne import kar liya hai
+      get(ref(db, `referral_codes/${myReferralCode}`)).then((codeSnap) => {
+        if (!codeSnap.exists()) {
+          set(ref(db, `referral_codes/${myReferralCode}`), {
+            phone: phone,
+            owner: phone,
+            createdAt: Date.now()
+          }).then(() => console.log("Code Created in referral_codes!"));
+        }
+      });
 
-// 3. User ki apni profile mein bhi update rakhein (dikhane ke liye)
-if (!user.myReferralCode) {
-  update(userRef, { myReferralCode: myReferralCode });
-}
+      if (!user.myReferralCode) {
+        update(userRef, { myReferralCode: myReferralCode });
+      }
+
       const lockBank = Boolean((user.upi_id || '').trim() || (user.bank_acc || '').trim());
       setBankLockState(lockBank);
     });
@@ -308,7 +303,6 @@ if (!user.myReferralCode) {
   submitKycBtn.onclick = async () => {
     const file = aadharFileInput.files[0];
     if (!fullNameInput.value || !aadharNumberInput.value || !file) return alert('Sari details bharein!');
-    
     submitKycBtn.disabled = true;
     submitKycBtn.textContent = 'Uploading...';
     try {
