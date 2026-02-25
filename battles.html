@@ -563,31 +563,16 @@ async function processReferralCommission(winnerPhone, winAmount) {
       }
     }
 
-    async function declareLost(battleId) {
-      const battleRef = ref(db, `battles/${battleId}`);
-      const tx = await runTransaction(battleRef, (battle) => {
-        if (!battle || !['playing', 'dispute'].includes(battle.status) || battle.settledAt) return;
-        const isCreator = battle.creatorPhone === phone;
-        const isJoiner = battle.joinerPhone === phone;
-        if (!isCreator && !isJoiner) return;
-        battle.status = 'completed';
-        battle.result_status = 'auto_lost';
-        battle.loserPhone = phone;
-        battle.winnerPhone = isCreator ? battle.joinerPhone : battle.creatorPhone;
-        battle.resultType = 'lost-auto-settled';
-        battle.settlement_processed = true;
-        battle.settledAt = Date.now();
-        battle.updatedAt = Date.now();
-        return battle;
-      });
-
-      if (!tx.committed) return alert('Unable to process result.');
-      const battle = tx.snapshot.val() || {};
-      const winAmt = computeWinAmount(battle.amount);
-      await creditWinning(battle.winnerPhone, winAmt);
-      // Winner ko paisa milte hi, uske Referrer ko 2% commission do
-await processReferralCommission(battle.winnerPhone, winAmt);
-      alert('Result settled successfully.');
+   async function declareLost(battleId) {
+      // Ab hum direct paise nahi bhejenge, user ko modal dikhayenge
+      pendingWinBattleId = battleId; 
+      
+      // Modal (box) ki headings ko badal dete hain
+      document.querySelector('#winModal .title').textContent = "Upload Loss Screenshot";
+      document.querySelector('#winModal .small').textContent = "Game haarne ka screenshot upload karein. Admin verify karke match settle karega.";
+      
+      // Screenshot wala box khol do
+      showModal(winModal);
     }
 
     async function uploadToImgBB(file) {
@@ -600,46 +585,56 @@ await processReferralCommission(battle.winnerPhone, winAmt);
       return url;
     }
 
-    async function declareWinWithScreenshot() {
+  async function declareWinWithScreenshot() {
       if (!pendingWinBattleId) return;
       const file = winFile.files[0];
-      if (!file) return alert('Please upload screenshot first.');
+      if (!file) return alert('Kripya screenshot upload karein!');
 
       submitWinBtn.disabled = true;
+      submitWinBtn.textContent = "Uploading...";
+
       try {
         const url = await uploadToImgBB(file);
         const tx = await runTransaction(ref(db, `battles/${pendingWinBattleId}`), (battle) => {
-          if (!battle || battle.status !== 'playing' || battle.settledAt) return;
+          if (!battle || battle.settledAt) return;
+          
           const isParticipant = [battle.creatorPhone, battle.joinerPhone].includes(phone);
           if (!isParticipant) return;
+
+          // Status ko 'pending' kar do taaki Admin approve kar sake
           battle.status = 'pending';
           battle.result_status = 'pending';
-          battle.win_claim_by = phone;
-          battle.screenshot_url = url;
-          battle.win_ss = battle.win_ss || {};
-          battle.win_ss[phone] = url;
-          battle.winnerPhone = phone;
-          battle.loserPhone = battle.creatorPhone === phone ? battle.joinerPhone : battle.creatorPhone;
-          battle.resultType = 'win-claim-pending-admin';
-          battle.claimedAt = Date.now();
+          battle.screenshot_url = url; 
+          battle.claimed_by = phone;
+          
+          // Ye record rakho ki kisne kya claim kiya (Win ya Loss)
+          if (!battle.claims) battle.claims = {};
+          battle.claims[phone] = {
+              url: url,
+              type: document.querySelector('#winModal .title').textContent.includes("Loss") ? "LOST" : "WIN",
+              time: Date.now()
+          };
+
           battle.updatedAt = Date.now();
           return battle;
         });
 
-        if (!tx.committed) throw new Error('Unable to submit win claim.');
+        if (!tx.committed) throw new Error('Update fail ho gaya!');
 
         closeModal(winModal);
-        alert('Claim submitted. Result is pending admin approval.');
+        alert('Screenshot Admin ko bhej diya gaya hai! Verification ke baad balance update ho jayega.');
+        
+        // Modal ko wapas normal (Winning title) kar do
+        document.querySelector('#winModal .title').textContent = "Upload Winning Screenshot";
         pendingWinBattleId = null;
         winFile.value = '';
       } catch (error) {
-        alert(error.message || 'Unable to submit claim.');
+        alert("Galti: " + error.message);
       } finally {
         submitWinBtn.disabled = false;
+        submitWinBtn.textContent = "Upload & Submit";
       }
     }
-
-
     function renderOpenBattles(data) {
       const list = Object.values(data || {}).filter((b) => b?.status === 'open').sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       if (!list.length) {
