@@ -137,7 +137,7 @@ import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const auth = getAuth(app);
     const IMGBB_API_KEY = 'ca44783bda6779b5e3913432bd243b30';
 
     const phone = localStorage.getItem('sr_ludo_phone');
@@ -301,4 +301,5 @@ import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
   </script>
 </body>
 </html>
+
 
