@@ -855,16 +855,31 @@ if (action === 'i-lost') {
       });
     }
 
-    function syncBattlesRealtime() {
+   function syncBattlesRealtime() {
       onValue(ref(db, 'battles'), (snap) => {
         battlesCache = snap.val() || {};
+        
+        // --- Naya Kaam: Check karo ki parda hatana hai ya nahi ---
+        let meriBattleMilGayi = false;
         Object.values(battlesCache).forEach((battle) => {
+          // Agar meri battle hai aur wo abhi 'open' hai, toh parda dikhao
+          if (battle.creatorPhone === phone && battle.status === 'open') {
+            meriBattleMilGayi = true;
+          }
+          
           if (!battle?.id) return;
           if (['completed', 'win', 'lost'].includes(battle.status)) {
             const node = document.getElementById(`running-${battle.id}`);
             if (node) node.remove();
           }
         });
+
+        // Agar meri koi open battle nahi hai, toh parda chhupa do
+        if (!meriBattleMilGayi) {
+          document.getElementById('parda').classList.remove('active');
+        }
+        // -------------------------------------------------------
+
         renderOpenBattles(battlesCache);
         renderRunningBattles(battlesCache);
       });
