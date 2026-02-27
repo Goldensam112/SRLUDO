@@ -4,8 +4,8 @@
   <link rel="icon" type="image/png" href="classic2.png">
   <title>SR LUDO - Best Online Ludo Battle Arena | Real Cash Games</title>
   <meta name="title" content="SR LUDO - Best Online Ludo Battle Arena">
-  <meta name="description" content="SR LUDO par real players ke sath Ludo battles khelo. Fast withdrawal, 2% referral bonus aur 24/7 support. Join the premium battle arena now!">
-  <meta name="keywords" content="SR Ludo, Online Ludo, Ludo Cash Game, Real Money Ludo, Ludo Battle, Win Cash Ludo">
+  <meta name="description" content="SR LUDO par real players ke sath Ludo battles khelo., 2% referral bonus aur 24/7 support. Join the premium battle arena now!">
+  <meta name="keywords" content="SR Ludo, Online Ludo, apni ludo ki skills dikhao">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://srludo.online/">
   <meta property="og:title" content="SR LUDO - Khelo aur Jeeto Real Cash">
@@ -86,31 +86,49 @@
 <body>
 
   <div class="app">
-    <section id="loginScreen" class="login-screen hidden">
-      <div class="login-card">
-        <img src="logo.png" alt="Logo" class="main-logo">
-        <p style="color:var(--text-dark); margin-bottom: 20px; font-weight: 600;">Premium Battle Arena</p>
-        
-        <input id="loginPhone" class="login-input" type="tel" maxlength="10" placeholder="Mobile Number">
-        <input id="loginPass" class="login-input" type="password" placeholder="Password (Min 6 chars)">
-        <input id="referralCode" class="login-input" type="text" placeholder="Referral Code (Optional)">
-        <div class="terms-row">
-          <input type="checkbox" id="termsCheck" checked>
-          <span>I agree to the <a href="terms.html" style="color:var(--accent); text-decoration:none; font-weight:600;">Terms & Conditions</a></span>
-        </div>
-        
-        <button id="emailLoginBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; margin-top: 5px;">Login / Register</button>
-        
-        <div style="margin-top: 15px; text-align: center;">
-            <a href="#" id="forgotPassBtn" style="color: #64748b; text-decoration: none; font-size: 12px;">Forgot Password?</a>
-        </div>
+ <section id="loginScreen" class="login-screen hidden">
+  <div class="login-card">
+    <img src="logo.png" alt="Logo" class="main-logo">
+    
+    <div style="display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 20px;">
+      <button id="tabLogin" style="flex: 1; padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; background: var(--accent); color: white;">Login</button>
+      <button id="tabSignup" style="flex: 1; padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; background: transparent; color: var(--text-dark);">Register</button>
+    </div>
 
-        <div style="margin-top: 20px; font-size: 12px; color: #64748b; text-align: center;">
-          By continuing, you agree to our 
-          <a href="privacy.html" style="color: #2f7bff; text-decoration: none; font-weight: 600;">Privacy Policy</a>
-        </div>
-      </div>
-    </section>
+    <p id="formTitle" style="color:var(--text-dark); margin-bottom: 10px; font-weight: 600;">Welcome Back!</p>
+
+    <input id="loginPhone" class="login-input" type="tel" maxlength="10" placeholder="Mobile Number">
+    <input id="loginPass" class="login-input" type="password" placeholder="Password (Min 6 chars)">
+    
+    <div id="referralWrapper" class="hidden">
+       <input id="referralCode" class="login-input" type="text" placeholder="Referral Code (Optional)">
+    </div>
+
+   <div class="terms-row">
+  <input type="checkbox" id="termsCheck" checked>
+  <span>
+    I agree to the 
+    <a href="terms.html" style="color:var(--accent); text-decoration:none; font-weight:600;">
+      Terms & Conditions
+    </a> 
+    and 
+    <a href="privacy.html" style="color:var(--accent); text-decoration:none; font-weight:600;">
+      Privacy Policy
+    </a>
+  </span>
+</div>
+    
+    <button id="authBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; margin-top: 5px;">Login Now</button>
+    
+    <div id="forgotWrapper" style="margin-top: 15px; text-align: center;">
+        <a href="#" id="forgotPassBtn" style="color: #64748b; text-decoration: none; font-size: 12px;">Forgot Password?</a>
+    </div>
+
+    <p style="color:red; font-size:10px; font-weight:bold; margin-top:20px; line-height:1.4; opacity: 0.8;">
+      STRICT WARNING: 18+ only. Not for residents of Assam, Odisha, Nagaland, Sikkim, AP, and Telangana.
+    </p>
+  </div>
+</section>
 
     <section id="dashboard" class="hidden">
       <header class="sticky-header">
@@ -247,8 +265,46 @@
       });
     };
 
-    // --- LOGIN LOGIC ---
-    document.getElementById('emailLoginBtn').onclick = async () => {
+   
+  // --- LOGIN & REGISTER LOGIC (PROFESSIONAL TABS) ---
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const referralWrapper = document.getElementById('referralWrapper');
+    const authBtn = document.getElementById('authBtn');
+    const formTitle = document.getElementById('formTitle');
+    const forgotWrapper = document.getElementById('forgotWrapper');
+
+    let isLoginMode = true;
+
+    // Tab badalne ka function
+    function switchMode(toLogin) {
+      isLoginMode = toLogin;
+      if (isLoginMode) {
+        tabLogin.style.background = 'var(--accent)';
+        tabLogin.style.color = 'white';
+        tabSignup.style.background = 'transparent';
+        tabSignup.style.color = 'var(--text-dark)';
+        referralWrapper.classList.add('hidden');
+        forgotWrapper.classList.remove('hidden');
+        authBtn.textContent = "Login Now";
+        formTitle.textContent = "Welcome Back!";
+      } else {
+        tabSignup.style.background = 'var(--accent)';
+        tabSignup.style.color = 'white';
+        tabLogin.style.background = 'transparent';
+        tabLogin.style.color = 'var(--text-dark)';
+        referralWrapper.classList.remove('hidden');
+        forgotWrapper.classList.add('hidden');
+        authBtn.textContent = "Create Account";
+        formTitle.textContent = "Join the Battle Arena";
+      }
+    }
+
+    tabLogin.onclick = () => switchMode(true);
+    tabSignup.onclick = () => switchMode(false);
+
+    // Main Login/Signup Button Click
+    authBtn.onclick = async () => {
       if(!termsCheck.checked) {
           alert("Bhai, pehle Rules maan lo (Tick karein)!");
           return;
@@ -258,7 +314,7 @@
       const refCode = document.getElementById('referralCode').value.trim();
 
       if (p.length !== 10 || pass.length < 6) {
-        alert("Enter 10 digit number and min 6 digit password.");
+        alert("Mobile 10 digit ka aur password kam se kam 6 digit ka hona chahiye.");
         return;
       }
 
@@ -266,18 +322,19 @@
       const finalPhone = "+91" + p;
 
       try {
-        await signInWithEmailAndPassword(auth, dummyEmail, pass);
+        if (isLoginMode) {
+          await signInWithEmailAndPassword(auth, dummyEmail, pass);
+        } else {
+          await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+        }
         authSuccess(finalPhone, refCode);
       } catch (err) {
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-          try {
-            await createUserWithEmailAndPassword(auth, dummyEmail, pass);
-            authSuccess(finalPhone, refCode);
-          } catch (e) { alert("Registration Failed: " + e.message); }
-        } else { alert("Login Error: " + err.message); }
+        let msg = "Error: " + err.message;
+        if(err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') msg = "Mobile number ya Password galat hai!";
+        if(err.code === 'auth/email-already-in-use') msg = "Is number par account pehle se bana hai! Login karein.";
+        alert(msg);
       }
     };
-
     function authSuccess(phone, refCode) {
       localStorage.setItem('sr_ludo_phone', phone);
       if (refCode) localStorage.setItem('sr_ludo_pending_referral', refCode);
