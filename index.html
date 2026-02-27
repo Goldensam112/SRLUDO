@@ -81,6 +81,11 @@
       cursor: pointer; 
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes pulseGlow {
+  0% { transform: scale(1); box-shadow:0 6px 18px rgba(255,87,34,0.4); }
+  50% { transform: scale(1.03); box-shadow:0 8px 25px rgba(255,87,34,0.6); }
+  100% { transform: scale(1); box-shadow:0 6px 18px rgba(255,87,34,0.4); }
+}
   </style>
 </head>
 <body>
@@ -119,7 +124,22 @@
 </div>
     
     <button id="authBtn" style="width:100%; padding:14px; background:var(--accent); border:none; border-radius:12px; color:white; font-weight:700; cursor:pointer; margin-top: 5px;">Login Now</button>
-    
+ <div style="margin-top:12px;">
+  <button id="highlightSignupBtn" 
+    style="width:100%;
+           padding:12px;
+           background:linear-gradient(135deg,#ff9800,#ff5722);
+           border:none;
+           border-radius:12px;
+           color:white;
+           font-weight:800;
+           letter-spacing:0.5px;
+           cursor:pointer;
+           box-shadow:0 6px 18px rgba(255,87,34,0.4);
+           animation:pulseGlow 1.5s infinite;">
+    🚀 NEW PLAYER? SIGN UP HERE
+  </button>
+</div>   
     <div id="forgotWrapper" style="margin-top: 15px; text-align: center;">
         <a href="#" id="forgotPassBtn" style="color: #64748b; text-decoration: none; font-size: 12px;">Forgot Password?</a>
     </div>
@@ -302,7 +322,10 @@
 
     tabLogin.onclick = () => switchMode(true);
     tabSignup.onclick = () => switchMode(false);
-
+document.getElementById('highlightSignupBtn').onclick = () => {
+  switchMode(false);
+  document.getElementById('loginPhone').focus();
+};
     // Main Login/Signup Button Click
     authBtn.onclick = async () => {
       if(!termsCheck.checked) {
