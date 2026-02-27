@@ -195,10 +195,48 @@
       display: none;
     }
     .modal.show { display: block; }
+    /* --- YAHAN SE COPY KAREIN --- */
+    .waiting-parda {
+      display: none; 
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 9, 19, 0.95);
+      z-index: 999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .waiting-parda.active { display: flex; }
+
+    .premium-gola {
+      width: 60px;
+      height: 60px;
+      border: 5px solid rgba(47, 123, 255, 0.1);
+      border-top: 5px solid #2f7bff;
+      border-radius: 50%;
+      animation: ghumo 1s linear infinite;
+    }
+
+    @keyframes ghumo {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .waiting-text {
+      margin-top: 20px;
+      color: white;
+      font-weight: bold;
+    }
+    /* --- YAHAN TAK COPY KAREIN --- */
   </style>
 </head>
 <body>
   <div class="app">
+    <div id="parda" class="waiting-parda">
+  <div class="premium-gola"></div>
+  <div class="waiting-text">PLEASE WAIT...<br><span style="font-size:12px; font-weight:normal; opacity:0.7;">Waiting for someone to join your battle</span></div>
+</div>
     <header class="sticky-header">
       <a class="back-btn" href="index.html">← Home</a>
       <div class="wallets">
@@ -468,6 +506,7 @@ async function processReferralCommission(winnerPhone, winAmount) {
         if (available < amount) throw new Error('Insufficient wallet balance.');
         const deduction = await deductSmartWallet(phone, amount);
         const battleRef = push(ref(db, 'battles'));
+        document.getElementById('parda').classList.add('active');
         await set(battleRef, {
           id: battleRef.key,
           amount,
